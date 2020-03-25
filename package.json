@@ -24,8 +24,11 @@
     "node": "^10"
   },
   "dependencies": {
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.5",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
-    "mongoose": "^5.9.6"
+    "mongoose": "^5.9.6",
+    "validator": "^13.0.0"
   }
 }
