@@ -25,6 +25,7 @@ const signTokenAndSend = (user, req, res) => {
 
   res.status(200).json({
     status: 'success',
+    message: 'Успішно авторизовано',
     token,
     data: { user },
   });

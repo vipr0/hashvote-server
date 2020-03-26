@@ -12,6 +12,9 @@ router.get('/verify/:token', authController.verifyAccount);
 
 router.use(authController.protect);
 
+router.patch('/update/data', userController.updateProfileData);
+router.patch('/update/password', userController.updateProfilePassword);
+
 router.use(authController.restrictTo('admin'));
 
 router.get('/search', userController.search);
