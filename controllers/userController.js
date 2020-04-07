@@ -1,14 +1,7 @@
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
-
-const filterObject = (obj, ...allowedFields) => {
-  const newObj = {};
-  Object.keys(obj).forEach((el) => {
-    if (allowedFields.includes(el)) newObj[el] = obj[el];
-  });
-  return newObj;
-};
+const filterObject = require('../utils/filterObject');
 
 exports.search = catchAsync(async (req, res, next) => {
   const regeexp = new RegExp(req.query.query, 'i');

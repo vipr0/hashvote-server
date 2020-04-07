@@ -34,6 +34,9 @@
     "mongoose": "^5.9.6",
     "nodemailer": "^6.4.6",
     "pug": "^2.0.4",
-    "validator": "^13.0.0"
+    "solc": "^0.6.4",
+    "truffle-hdwallet-provider": "^1.0.17",
+    "validator": "^13.0.0",
+    "web3": "^1.2.6"
   }
 }

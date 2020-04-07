@@ -40,6 +40,10 @@ class Email {
   async sendResetPassword(locals) {
     await this.send('resetPassword', 'Відновлення паролю', locals);
   }
+
+  async sendVotingToken(locals) {
+    await this.send('votingToken', 'Голосування робпочато', locals);
+  }
 }
 
 module.exports = Email;

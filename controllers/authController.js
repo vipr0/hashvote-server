@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const Email = require('../utils/email');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
+const filterObject = require('../utils/filterObject');
 const User = require('../models/userModel');
 const {
   JWT_SECRET,
@@ -92,14 +93,19 @@ exports.login = catchAsync(async (req, res, next) => {
 
 exports.signup = catchAsync(async (req, res, next) => {
   const token = crypto.randomBytes(32).toString('hex');
-  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+  const filteredBody = filterObject(
+    req.body,
+    'name',
+    'email',
+    'password',
+    'passwordConfirm'
+  );
+  filteredBody.verificationToken = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
 
-  const user = await User.create({
-    ...req.body,
-    role: 'voter',
-    isVerified: false,
-    verificationToken: hashedToken,
-  });
+  const user = await User.create(filteredBody);
 
   const url = `${req.protocol}://${req.get('host')}/verify/${token}`;
   new Email(user.email).sendWelcome({ name: user.name, url });
