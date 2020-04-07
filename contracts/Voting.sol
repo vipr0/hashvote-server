@@ -4,7 +4,6 @@ pragma solidity >=0.4.21 <0.7.0;
 /// @title A voting smart contract
 /// @author Vitaliy Protsyk
 contract VotingPlatform {
-
     // Respresents a single candidate
     struct Candidate {
         bool isValid; // if true, that candidate is valid
@@ -43,16 +42,19 @@ contract VotingPlatform {
     /// @param candidates Array of candidates
     /// @param tokens Array of encrypted tokens
     /// @param endTime timestamp of time when voting will be finished
-    /// @return true - if voting successfully created
     function createVoting(
         bytes32 votingId,
         bytes32[] memory candidates,
         bytes32[] memory tokens,
         uint256 endTime
-    ) public returns(bool){
-        require(candidates.length > 1, "Required more than 1 candidate");
-        require(tokens.length > 2, "Required more than 2 voters");
-        require(inFuture(endTime), "End time should be in the future");
+    ) public {
+        require(
+            !votingExists(votingId),
+            'Voting with this id is already created'
+        );
+        require(candidates.length > 1, 'Required more than 1 candidate');
+        require(tokens.length > 2, 'Required more than 2 voters');
+        require(inFuture(endTime), 'End time should be in the future');
 
         votings[votingId] = Voting(true, tokens.length, 0, endTime);
 
@@ -63,8 +65,63 @@ contract VotingPlatform {
         for (uint256 i = 0; i < candidates.length; i++) {
             votings[votingId].candidates[candidates[i]] = Candidate(true, 0);
         }
+    }
 
-        return true;
+    /// @notice Gives a vote to `candidate`
+    /// @param votingId Id of voting
+    /// @param candidate Name of candidate you want to choose
+    /// @param token Your unhashed(!!!) token
+    function vote(bytes32 votingId, bytes32 candidate, bytes32 token) public {
+        // First of all we hash our token to get
+        // information about it
+        bytes32 encryptedToken = encryptToken(token);
+
+        require(votingExists(votingId), 'Voting with this ID not exists');
+        require(validToken(votingId, encryptedToken), 'Invalid token');
+        require(
+            !usedToken(votingId, encryptedToken),
+            'This token is already used'
+        );
+        require(!votingFinished(votingId), 'This voting is finished');
+        require(validCandidate(votingId, candidate), 'Invalid candidate');
+
+        // If we pass all our validations than
+        // we increment number of votes given to our candidate,
+        // set out token as used and increment number of all given votes
+        votings[votingId].candidates[candidate].votesReceived += 1;
+        votings[votingId].tokens[encryptedToken].isUsed = true;
+        votings[votingId].alreadyVoted += 1;
+    }
+
+    /// @notice Returns number of already voted voters
+    /// @param votingId Id of voting
+    /// @return Number of already voted voters
+    function alreadyVoted(bytes32 votingId) public view returns (uint256) {
+        require(votingExists(votingId), 'Voting with this ID not exists');
+        return votings[votingId].alreadyVoted;
+    }
+
+    /// @notice Returns number of all voters
+    /// @param votingId Id of voting
+    /// @return number of all voters
+    function votersTotal(bytes32 votingId) public view returns (uint256) {
+        require(votingExists(votingId), 'Voting with this ID not exists');
+        return votings[votingId].votersTotal;
+    }
+
+    /// @notice Returns time when voting will be finished
+    /// @param votingId Id of voting
+    /// @return time when voting will be finished
+    function endTime(bytes32 votingId) public view returns (uint256) {
+        require(votingExists(votingId), 'Voting with this ID not exists');
+        return votings[votingId].endTime;
+    }
+
+    /// @notice Check if we have such voting
+    /// @param votingId Id of voting
+    /// @return true if we have such token, false - if not
+    function votingExists(bytes32 votingId) public view returns (bool) {
+        return votings[votingId].exists;
     }
 
     /// @notice Gives a number of votes that receives candidate
@@ -76,41 +133,8 @@ contract VotingPlatform {
         view
         returns (uint256)
     {
-        require(validCandidate(votingId, candidate), "Invalid candidate");
+        require(validCandidate(votingId, candidate), 'Invalid candidate');
         return votings[votingId].candidates[candidate].votesReceived;
-    }
-
-    /// @notice Gives a vote to `candidate`
-    /// @param votingId Id of voting
-    /// @param candidate Name of candidate you want to choose
-    /// @param token Your unhashed(!!!) token
-    function vote(bytes32 votingId, bytes32 candidate, bytes32 token) public {
-        // First of all we hash our token to get
-        // information about it
-        bytes32 hashedToken = hashToken(token);
-
-        require(votingExists(votingId), "Voting with this ID not exists");
-        require(validToken(votingId, hashedToken), "Invalid token");
-        require(
-            !usedToken(votingId, hashedToken),
-            "This token is already used"
-        );
-        require(!votingFinished(votingId), "This voting is finished");
-        require(validCandidate(votingId, candidate), "Invalid candidate");
-
-        // If we pass all our validations than
-        // we increment number of votes given to our candidate,
-        // set out token as used and increment number of all given votes
-        votings[votingId].candidates[candidate].votesReceived += 1;
-        votings[votingId].tokens[hashedToken].isUsed = true;
-        votings[votingId].alreadyVoted += 1;
-    }
-
-    /// @notice Check if we have such voting
-    /// @param votingId Id of voting
-    /// @return true if we have such token, false - if not
-    function votingExists(bytes32 votingId) public view returns (bool) {
-        return votings[votingId].exists;
     }
 
     /// @notice Check if there is a candidate with `candidate` name
@@ -146,7 +170,7 @@ contract VotingPlatform {
         view
         returns (bool)
     {
-        require(validToken(votingId, token), "Invalid token");
+        require(validToken(votingId, token), 'Invalid token');
         return votings[votingId].tokens[token].isUsed;
     }
 
@@ -173,7 +197,7 @@ contract VotingPlatform {
     /// @notice Hash provided token by keccak256 algorithm
     /// @param token User token
     /// @return Hashed user token
-    function hashToken(bytes32 token) public pure returns (bytes32) {
+    function encryptToken(bytes32 token) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(token));
     }
 }

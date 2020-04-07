@@ -1,6 +1,10 @@
 {
+  "env": {
+    "mocha": true,
+    "truffle/globals": true
+  },
   "extends": ["airbnb", "prettier", "plugin:node/recommended"],
-  "plugins": ["prettier"],
+  "plugins": ["prettier", "truffle"],
   "rules": {
     "prettier/prettier": "error",
     "spaced-comment": "off",
