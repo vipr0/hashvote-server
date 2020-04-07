@@ -24,6 +24,7 @@
     "node": "^10"
   },
   "dependencies": {
+    "@truffle/hdwallet-provider": "^1.0.34",
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.5",
@@ -35,7 +36,6 @@
     "nodemailer": "^6.4.6",
     "pug": "^2.0.4",
     "solc": "^0.6.4",
-    "truffle-hdwallet-provider": "^1.0.17",
     "validator": "^13.0.0",
     "web3": "^1.2.6"
   }
