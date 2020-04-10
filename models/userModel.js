@@ -3,60 +3,54 @@ const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Введіть будь-ласка своє ім`я'],
-  },
-  role: {
-    type: String,
-    enum: ['admin', 'registar', 'voter'],
-    default: 'voter',
-  },
-  email: {
-    type: String,
-    required: [true, 'Введіть будь-ласка свій email'],
-    unique: true,
-    lowercase: true,
-    validate: [validator.isEmail, 'Введіть будь-ласка правильний email'],
-  },
-  photo: {
-    type: String,
-    default: 'default.jpg',
-  },
-  password: {
-    type: String,
-    required: [true, 'Введіть будь-ласка пароль'],
-    select: false,
-  },
-  passwordConfirm: {
-    type: String,
-    validate: {
-      validator: function (el) {
-        return el === this.password;
-      },
-      message: 'Паролі не співпадають',
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, 'Введіть будь-ласка своє ім`я'],
     },
+    email: {
+      type: String,
+      required: [true, 'Введіть будь-ласка свій email'],
+      unique: true,
+      lowercase: true,
+      validate: [validator.isEmail, 'Введіть будь-ласка правильний email'],
+    },
+    role: {
+      type: String,
+      enum: ['admin', 'voter'],
+      default: 'voter',
+    },
+    photo: {
+      type: String,
+      default: 'default.jpg',
+    },
+    password: {
+      type: String,
+      select: false,
+    },
+    registrationToken: String,
+    passwordResetToken: String,
+    passwordResetTokenExpires: Date,
+    passwordChangedAt: Date,
   },
-  passwordChangedAt: Date,
-  passwordResetToken: String,
-  isVerified: {
-    type: Boolean,
-    default: false,
-  },
-  passwordResetTokenExpires: Date,
-  verificationToken: String,
+  {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
+
+userSchema.virtual('groups', {
+  ref: 'Membership',
+  foreignField: 'user',
+  localField: '_id',
 });
 
-// Hash new password
+// Encrypt new password
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-
   this.password = await bcrypt.hash(this.password, 12);
-  this.passwordConfirm = undefined;
-
   if (!this.isNew) this.passwordChangedAt = Date.now() - 1000;
-
   next();
 });
 

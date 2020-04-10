@@ -5,10 +5,11 @@ const VotingPlatform = artifacts.require('VotingPlatform');
 
 contract('VotingPlatform', async (accounts) => {
   const tokens = [];
-  for (let i = 0; i < 6; i += 1) {
-    tokens.push(web3.utils.randomHex(32));
+  for (let i = 0; i < 60; i += 1) {
+    tokens.push(Web3.utils.randomHex(32));
   }
-  const candidates = ['Rama', 'Nick', 'Jose'];
+  const adminToken = Web3.utils.randomHex(32);
+  const candidates = ['Candidate #1', 'Candidate #2', 'Candidate #3'];
   const votingId = Web3.utils.randomHex(32);
   const endTime = Date.now() + 1 * 24 * 60 * 60 * 1000;
 
@@ -16,14 +17,58 @@ contract('VotingPlatform', async (accounts) => {
     const contract = await VotingPlatform.deployed();
     const result = await contract.createVoting(
       votingId,
+      Web3.utils.soliditySha3(adminToken),
       candidates.map((name) => Web3.utils.utf8ToHex(name)),
-      tokens.map((token) => Web3.utils.soliditySha3(token)),
       endTime,
       { from: accounts[0] }
     );
 
     assert.property(result, 'tx');
     assert.property(result, 'receipt');
+  });
+
+  it('should return correct validAdminToken() value', async () => {
+    const contract = await VotingPlatform.deployed();
+    const result = await contract.validAdminToken(votingId, adminToken);
+
+    assert.isTrue(result);
+  });
+
+  it('should add 6 voting tokens', async () => {
+    const contract = await VotingPlatform.deployed();
+    const result = await contract.addTokens(
+      votingId,
+      adminToken,
+      tokens.map((token) => Web3.utils.soliditySha3(token)),
+      {
+        from: accounts[0],
+      }
+    );
+
+    assert.property(result, 'tx');
+    assert.property(result, 'receipt');
+  });
+
+  it('should return false in votingStarted()', async () => {
+    const contract = await VotingPlatform.deployed();
+    const result = await contract.votingStarted(votingId);
+
+    assert.isFalse(result);
+  });
+
+  it('should start voting', async () => {
+    const contract = await VotingPlatform.deployed();
+    const result = await contract.startVoting(votingId, adminToken);
+
+    assert.property(result, 'tx');
+    assert.property(result, 'receipt');
+  });
+
+  it('should return true in votingStarted()', async () => {
+    const contract = await VotingPlatform.deployed();
+    const result = await contract.votingStarted(votingId);
+
+    assert.isTrue(result);
   });
 
   it('should vote 4 times for candidates', async () => {
@@ -69,7 +114,7 @@ contract('VotingPlatform', async (accounts) => {
     const contract = await VotingPlatform.deployed();
     const result = await contract.votersTotal(votingId);
 
-    assert.equal(result, 6);
+    assert.equal(result.toNumber(), 60);
   });
 
   it('should return correct endTime() value', async () => {
@@ -90,7 +135,7 @@ contract('VotingPlatform', async (accounts) => {
     const contract = await VotingPlatform.deployed();
     const result = await contract.totalVotesFor(
       votingId,
-      Web3.utils.utf8ToHex('Rama')
+      Web3.utils.utf8ToHex('Candidate #1')
     );
 
     assert.equal(result, 2);
@@ -100,7 +145,7 @@ contract('VotingPlatform', async (accounts) => {
     const contract = await VotingPlatform.deployed();
     const result = await contract.validCandidate(
       votingId,
-      Web3.utils.utf8ToHex('Rama')
+      Web3.utils.utf8ToHex('Candidate #1')
     );
 
     assert.isTrue(result);

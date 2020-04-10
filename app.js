@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const AppError = require('./utils/AppError');
 const userRouter = require('./routes/userRoutes');
 const votingRouter = require('./routes/votingRoutes');
+const groupRouter = require('./routes/groupRoutes');
 const errorController = require('./controllers/errorController');
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(compression());
 // Routes
 app.use('/api/v1/votings', votingRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/groups', groupRouter);
 
 app.use('*', (req, res, next) => {
   next(new AppError('Not Found', 404));

@@ -4,6 +4,21 @@ pragma solidity >=0.4.21 <0.7.0;
 /// @title A voting smart contract
 /// @author Vitaliy Protsyk
 contract VotingPlatform {
+    event TokensAdded(bytes32 votingId, uint256 numOfTokens, address sender);
+    event VotingStarted(bytes32 votingId, uint256 time, address sender);
+    event VotingCreated(
+        bytes32 votingId,
+        bytes32[] candidates,
+        uint256 endTime,
+        address sender
+    );
+    event Voted(
+        bytes32 votingId,
+        bytes32 candidate,
+        bytes32 token,
+        address sender
+    );
+
     // Respresents a single candidate
     struct Candidate {
         bool isValid; // if true, that candidate is valid
@@ -19,6 +34,7 @@ contract VotingPlatform {
     // Respresents a voting instance
     struct Voting {
         bool exists; //  if true - voting exists
+        bool started; // if true - voting started
         // A state variable that stores all tokens
         mapping(bytes32 => Token) tokens;
         // Mapping that stores all candidates
@@ -26,26 +42,21 @@ contract VotingPlatform {
         uint256 votersTotal; // total number of all voters
         uint256 alreadyVoted; // it will represent how many people voted
         uint256 endTime; // timestamp of time when voting will be finished
+        bytes32 adminToken; //admin's token
     }
 
     // Mapping that stores all votings instances
     mapping(bytes32 => Voting) votings;
 
-    address public administrator; // address of administrator
-
-    constructor() public {
-        administrator = msg.sender;
-    }
-
     /// @notice Creates a new voting
     /// @param votingId Id of voting
+    /// @param adminToken Admin token
     /// @param candidates Array of candidates
-    /// @param tokens Array of encrypted tokens
     /// @param endTime timestamp of time when voting will be finished
     function createVoting(
         bytes32 votingId,
+        bytes32 adminToken,
         bytes32[] memory candidates,
-        bytes32[] memory tokens,
         uint256 endTime
     ) public {
         require(
@@ -53,18 +64,49 @@ contract VotingPlatform {
             'Voting with this id is already created'
         );
         require(candidates.length > 1, 'Required more than 1 candidate');
-        require(tokens.length > 2, 'Required more than 2 voters');
         require(inFuture(endTime), 'End time should be in the future');
 
-        votings[votingId] = Voting(true, tokens.length, 0, endTime);
+        votings[votingId] = Voting(true, false, 0, 0, endTime, adminToken);
+
+        for (uint256 i = 0; i < candidates.length; i++) {
+            votings[votingId].candidates[candidates[i]] = Candidate(true, 0);
+        }
+
+        emit VotingCreated(votingId, candidates, endTime, msg.sender);
+    }
+
+    /// @notice Adds new `tokens` to voting
+    /// @param votingId Id of voting
+    /// @param adminToken Admin token
+    /// @param tokens Array of encrypted tokenns
+    function addTokens(
+        bytes32 votingId,
+        bytes32 adminToken,
+        bytes32[] memory tokens
+    ) public {
+        require(votingExists(votingId), 'Voting with this ID not exists');
+        require(validAdminToken(votingId, adminToken), 'Invalid admin token');
 
         for (uint256 i = 0; i < tokens.length; i++) {
             votings[votingId].tokens[tokens[i]] = Token(true, false);
         }
 
-        for (uint256 i = 0; i < candidates.length; i++) {
-            votings[votingId].candidates[candidates[i]] = Candidate(true, 0);
-        }
+        votings[votingId].votersTotal += tokens.length;
+
+        emit TokensAdded(votingId, tokens.length, msg.sender);
+    }
+
+    /// @notice Starts voting
+    /// @param votingId Id of voting
+    /// @param adminToken Admin token
+    function startVoting(bytes32 votingId, bytes32 adminToken) public {
+        require(votingExists(votingId), 'Voting with this ID not exists');
+        require(validAdminToken(votingId, adminToken), 'Invalid admin token');
+        require(!votingStarted(votingId), 'Voting is already started');
+
+        votings[votingId].started = true;
+
+        emit VotingStarted(votingId, now, msg.sender);
     }
 
     /// @notice Gives a vote to `candidate`
@@ -77,13 +119,14 @@ contract VotingPlatform {
         bytes32 encryptedToken = encryptToken(token);
 
         require(votingExists(votingId), 'Voting with this ID not exists');
+        require(votingStarted(votingId), 'Voting is not yet started');
+        require(!votingFinished(votingId), 'This voting is finished');
+        require(validCandidate(votingId, candidate), 'Invalid candidate');
         require(validToken(votingId, encryptedToken), 'Invalid token');
         require(
             !usedToken(votingId, encryptedToken),
             'This token is already used'
         );
-        require(!votingFinished(votingId), 'This voting is finished');
-        require(validCandidate(votingId, candidate), 'Invalid candidate');
 
         // If we pass all our validations than
         // we increment number of votes given to our candidate,
@@ -91,6 +134,21 @@ contract VotingPlatform {
         votings[votingId].candidates[candidate].votesReceived += 1;
         votings[votingId].tokens[encryptedToken].isUsed = true;
         votings[votingId].alreadyVoted += 1;
+
+        emit Voted(votingId, candidate, token, msg.sender);
+    }
+
+    /// @notice Check if we have such token
+    /// @param votingId Id of voting
+    /// @param adminToken Admin unuencrypted token
+    /// @return true if we have such token, false - if not
+    function validAdminToken(bytes32 votingId, bytes32 adminToken)
+        public
+        view
+        returns (bool)
+    {
+        require(votingExists(votingId), 'Voting with this ID not exists');
+        return encryptToken(adminToken) == votings[votingId].adminToken;
     }
 
     /// @notice Returns number of already voted voters
@@ -133,6 +191,7 @@ contract VotingPlatform {
         view
         returns (uint256)
     {
+        require(votingExists(votingId), 'Voting with this ID not exists');
         require(validCandidate(votingId, candidate), 'Invalid candidate');
         return votings[votingId].candidates[candidate].votesReceived;
     }
@@ -146,6 +205,7 @@ contract VotingPlatform {
         view
         returns (bool)
     {
+        require(votingExists(votingId), 'Voting with this ID not exists');
         return votings[votingId].candidates[candidate].isValid;
     }
 
@@ -158,6 +218,7 @@ contract VotingPlatform {
         view
         returns (bool)
     {
+        require(votingExists(votingId), 'Voting with this ID not exists');
         return votings[votingId].tokens[token].isValid;
     }
 
@@ -170,6 +231,7 @@ contract VotingPlatform {
         view
         returns (bool)
     {
+        require(votingExists(votingId), 'Voting with this ID not exists');
         require(validToken(votingId, token), 'Invalid token');
         return votings[votingId].tokens[token].isUsed;
     }
@@ -178,7 +240,16 @@ contract VotingPlatform {
     /// @param votingId Id of voting
     /// @return true if voting is finished, false - if not
     function votingFinished(bytes32 votingId) public view returns (bool) {
+        require(votingExists(votingId), 'Voting with this ID not exists');
         return currentTime() > votings[votingId].endTime;
+    }
+
+    /// @notice Check if voting is finished
+    /// @param votingId Id of voting
+    /// @return true if voting is finished, false - if not
+    function votingStarted(bytes32 votingId) public view returns (bool) {
+        require(votingExists(votingId), 'Voting with this ID not exists');
+        return votings[votingId].started;
     }
 
     /// @notice Check if requested time is in future

@@ -1,13 +1,26 @@
+const crypto = require('crypto');
 const User = require('../models/userModel');
+const Membership = require('../models/membershipModel');
 const catchAsync = require('../utils/catchAsync');
+const Email = require('../utils/email');
 const AppError = require('../utils/AppError');
 const filterObject = require('../utils/filterObject');
+
+const findUser = async (id, next) => {
+  const user = await User.findById(id);
+  if (!user) return next(new AppError('Користувача з таким id не існує', 404));
+  return user;
+};
 
 exports.search = catchAsync(async (req, res, next) => {
   const regeexp = new RegExp(req.query.query, 'i');
 
   const result = await User.find({
-    $or: [{ name: { $regex: regeexp } }, { email: { $regex: regeexp } }],
+    $or: [
+      { name: { $regex: regeexp } },
+      { email: { $regex: regeexp } },
+      { role: { $regex: regeexp } },
+    ],
   });
 
   res.status(200).json({
@@ -28,11 +41,7 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
 });
 
 exports.getUser = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
-
-  if (!user) {
-    return next(new AppError('Користувача з таким id не існує'));
-  }
+  const user = await findUser(req.params.id, next);
 
   res.status(200).json({
     status: 'success',
@@ -42,7 +51,17 @@ exports.getUser = catchAsync(async (req, res, next) => {
 });
 
 exports.createUser = catchAsync(async (req, res, next) => {
-  const user = await User.create(req.body);
+  const token = crypto.randomBytes(32).toString('hex');
+  const filteredBody = filterObject(req.body, 'name', 'email');
+  filteredBody.registrationToken = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+
+  const user = await User.create(filteredBody);
+
+  const url = `${req.protocol}://${req.get('host')}/register/${token}`;
+  new Email(user.email).sendWelcome({ name: user.name, url });
 
   res.status(201).json({
     status: 'success',
@@ -52,20 +71,22 @@ exports.createUser = catchAsync(async (req, res, next) => {
 });
 
 exports.updateUser = catchAsync(async (req, res, next) => {
-  const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
+  const filteredBody = filterObject(req.body, 'email', 'name', 'role', 'photo');
+
+  const user = await findUser(req.params.id, next);
+  await user.update(filteredBody, { new: true, runValidators: true });
 
   res.status(200).json({
     status: 'success',
     message: 'Користувач оновлений',
-    data: { user: updatedUser },
+    data: { user },
   });
 });
 
 exports.deleteUser = catchAsync(async (req, res, next) => {
-  await User.findByIdAndDelete(req.params.id);
+  const user = await findUser(req.params.id, next);
+  await user.remove();
+  await Membership.deleteMany({ user: req.params.id });
 
   res.status(204).json({
     status: 'success',
@@ -73,30 +94,23 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.updateProfileData = catchAsync(async (req, res, next) => {
+exports.updateMyData = catchAsync(async (req, res, next) => {
   const filteredObject = filterObject(req.body, 'email', 'photo', 'name');
-  const updatedUser = await User.findByIdAndUpdate(
-    req.user.id,
-    filteredObject,
-    { new: true, runValidators: true }
-  );
+  const user = await findUser(req.user.id, next);
+  await user.update(filteredObject, { new: true, runValidators: true });
 
   res.status(200).json({
     status: 'success',
     message: 'Ваші дані успішно змінено',
-    data: { user: updatedUser },
+    data: { user },
   });
 });
 
-exports.updateProfilePassword = catchAsync(async (req, res, next) => {
+exports.updateMyPassword = catchAsync(async (req, res, next) => {
   const { password, newPassword, newPasswordConfirm } = req.body;
+
   if (!password || !newPassword || !newPasswordConfirm)
-    return next(
-      new AppError(
-        'Будь перевірте чи всі данні були введені (актуальний пароль та новий пароль двічі)',
-        400
-      )
-    );
+    return next(new AppError('Перевірте чи всі поля заповнені', 400));
 
   if (newPassword !== newPasswordConfirm)
     return next(new AppError('Нові паролі не співпадають', 400));
@@ -104,16 +118,10 @@ exports.updateProfilePassword = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user.id).select('+password');
 
   if (!(await user.correctPassword(password, user.password))) {
-    return next(
-      new AppError(
-        'Неправильний пароль. Перевірте введений пароль і спробйте ще раз',
-        401
-      )
-    );
+    return next(new AppError('Неправильний старий пароль.', 401));
   }
 
   user.password = newPassword;
-  user.passwordConfirm = newPasswordConfirm;
   user.save();
 
   res.status(200).json({

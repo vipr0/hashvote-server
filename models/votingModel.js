@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const validator = require('validator');
 
 const votingSchema = new mongoose.Schema({
   title: {
@@ -9,6 +8,11 @@ const votingSchema = new mongoose.Schema({
   description: {
     type: String,
     required: [true, 'Введіть будь ласка опис'],
+  },
+  votingId: {
+    type: String,
+    unique: true,
+    required: [true, 'Вкажіть id голосування'],
   },
   candidates: {
     type: [String],
@@ -20,16 +24,7 @@ const votingSchema = new mongoose.Schema({
       message: 'Повинно бути як мінімум 2 варіанти голосування',
     },
   },
-  contractAddress: {
-    type: String,
-    unique: true,
-    required: [true, 'Вкажіть адресу смартконтракта'],
-    validate: [
-      validator.isEthereumAddress,
-      'Неправильна адреса смартконтракту',
-    ],
-  },
-  endDate: {
+  endTime: {
     type: Date,
     required: [true, 'Вкажіть дату закінчення голосування'],
     validate: {
@@ -39,9 +34,27 @@ const votingSchema = new mongoose.Schema({
       message: 'Виберіть дату в майбутньому',
     },
   },
-  voters: {
-    type: [String],
-    required: [true, 'Вкажіть голосуючих'],
+  groups: [
+    {
+      type: mongoose.Schema.ObjectId,
+      ref: 'Group',
+    },
+  ],
+  createdBy: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now(),
+  },
+  tx: {
+    type: String,
+    required: [true, 'Голосування повинне мати транзакцію створення'],
+  },
+  isArchived: {
+    type: Boolean,
+    default: false,
   },
 });
 

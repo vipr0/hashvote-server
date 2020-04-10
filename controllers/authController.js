@@ -3,7 +3,6 @@ const crypto = require('crypto');
 const Email = require('../utils/email');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
-const filterObject = require('../utils/filterObject');
 const User = require('../models/userModel');
 const {
   JWT_SECRET,
@@ -47,16 +46,10 @@ exports.protect = catchAsync(async (req, res, next) => {
     );
 
   const decoded = await jwt.decode(token, JWT_SECRET);
-
-  if (!decoded)
-    return next(new AppError('Неправильний токен. Авторизутесь заново', 401));
-
   const user = await User.findById(decoded.id);
 
-  if (!user)
-    return next(
-      new AppError('Користувача для цього токена більше не існує', 401)
-    );
+  if (!decoded || !user)
+    return next(new AppError('Неправильний токен. Авторизуйтесь заново', 401));
 
   if (user.changedPassword(decoded.iat))
     return next(new AppError('Ваш пароль змінено. Авторизуйтесь заново', 401));
@@ -82,62 +75,37 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError('Неправильний пароль.'));
   }
 
-  if (!user.isVerified) {
-    return next(
-      new AppError('Користувач не підтвердив свою електронну пошту.')
-    );
+  if (user.registrationToken) {
+    return next(new AppError('Користувач не завершив реєстрацію'));
   }
 
   signTokenAndSend(user, req, res);
 });
 
 exports.signup = catchAsync(async (req, res, next) => {
-  const token = crypto.randomBytes(32).toString('hex');
-  const filteredBody = filterObject(
-    req.body,
-    'name',
-    'email',
-    'password',
-    'passwordConfirm'
-  );
-  filteredBody.verificationToken = crypto
-    .createHash('sha256')
-    .update(token)
-    .digest('hex');
-
-  const user = await User.create(filteredBody);
-
-  const url = `${req.protocol}://${req.get('host')}/verify/${token}`;
-  new Email(user.email).sendWelcome({ name: user.name, url });
-
-  res.status(200).json({
-    status: 'success',
-    message:
-      'Успішно зареєстровано. Підтвердіть свою пошту за посиланням у відправленому листі',
-  });
-});
-
-exports.verifyAccount = catchAsync(async (req, res, next) => {
-  const verificationToken = crypto
+  const registrationToken = crypto
     .createHash('sha256')
     .update(req.params.token)
     .digest('hex');
 
-  const user = await User.findOne({ verificationToken });
-
-  if (!user) {
+  const user = await User.findOne({ registrationToken });
+  if (!user)
     return next(
       new AppError(
-        'Неправильний або застарілий код підтвердження. Спробуйте ще раз',
+        'Неправильний код реєстрації. Зверніться до адміністратора',
         400
       )
     );
-  }
 
-  user.isVerified = true;
-  user.verificationToken = undefined;
+  if (!req.body.password || !req.body.passwordConfirm)
+    return next(new AppError('Введіть будь ласка паролі', 400));
 
-  await user.save({ validateBeforeSave: false });
+  if (req.body.password !== req.body.passwordConfirm)
+    return next(new AppError('Введені паролі не співпадають', 400));
+
+  user.password = req.body.password;
+  user.registrationToken = undefined;
+  await user.save();
 
   signTokenAndSend(user, req, res);
 });
@@ -180,7 +148,6 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     );
 
   user.password = req.body.password;
-  user.passwordConfirm = req.body.passwordConfirm;
   user.passwordResetToken = undefined;
   user.passwordResetTokenExpires = undefined;
   await user.save();
