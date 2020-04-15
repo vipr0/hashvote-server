@@ -72,7 +72,7 @@ exports.login = catchAsync(async (req, res, next) => {
   }
 
   if (!(await user.correctPassword(password, user.password))) {
-    return next(new AppError('Неправильний пароль.'));
+    return next(new AppError('Неправильний пароль.', 400));
   }
 
   if (user.registrationToken) {
