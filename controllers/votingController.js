@@ -4,27 +4,28 @@ const Ticket = require('../models/ticketModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 const Email = require('../utils/email');
-const filterObject = require('../utils/filterObject');
+const { hasFields } = require('../utils/object');
 const VotingContract = require('../utils/contract');
+const {
+  getAllDocuments,
+  updateDocument,
+  deleteDocument,
+} = require('../utils/query');
 
-const findVoting = async (id, next) => {
+const findVoting = async (id) => {
   const voting = await Voting.findById(id);
-  if (!voting) return next(new AppError('Такого голосування не існує', 404));
+  if (!voting) throw new AppError('Такого голосування не існує', 404);
   return voting;
 };
 
-exports.getAllVotings = catchAsync(async (req, res, next) => {
-  const votings = await Voting.find();
+exports.getAllVotings = getAllDocuments(Voting);
 
-  res.status(200).json({
-    status: 'success',
-    message: 'Успішний запит',
-    data: { votings },
-  });
-});
+exports.updateVoting = updateDocument(Voting, ['title', 'description']);
+
+exports.deleteVoting = deleteDocument(Voting);
 
 exports.getVoting = catchAsync(async (req, res, next) => {
-  const voting = await findVoting(req.params.id, next);
+  const voting = await findVoting(req.params.id);
   const contract = await VotingContract.getContractInfo(voting.votingId);
   const voteResult = await VotingContract.totalVotesGiven(
     voting.votingId,
@@ -39,6 +40,7 @@ exports.getVoting = catchAsync(async (req, res, next) => {
 });
 
 exports.createVoting = catchAsync(async (req, res, next) => {
+  hasFields(req.body, 'title', 'description', 'candidates', 'endTime');
   const { title, description, candidates, endTime } = req.body;
 
   // 2. Create new voting in smart contract with all voting tokens
@@ -68,7 +70,7 @@ exports.addGroupToVoting = catchAsync(async (req, res, next) => {
   const { group, id } = req.params;
   const filteredUsers = [];
 
-  const voting = await findVoting(id, next);
+  const voting = await findVoting(id);
 
   const isStarted = await VotingContract.votingStarted(voting.votingId);
   if (isStarted) return next(new AppError('Голосування вже розпочато', 400));
@@ -114,9 +116,10 @@ exports.addGroupToVoting = catchAsync(async (req, res, next) => {
 });
 
 exports.startVoting = catchAsync(async (req, res, next) => {
+  hasFields(req.body, 'token');
   const { token } = req.body;
 
-  const voting = await findVoting(req.params.id, next);
+  const voting = await findVoting(req.params.id);
   const result = await VotingContract.startVoting(voting.votingId, token);
 
   res.status(200).json({
@@ -127,9 +130,10 @@ exports.startVoting = catchAsync(async (req, res, next) => {
 });
 
 exports.vote = catchAsync(async (req, res, next) => {
+  hasFields(req.body, 'candidate', 'token');
   const { candidate, token } = req.body;
 
-  const voting = await findVoting(req.params.id, next);
+  const voting = await findVoting(req.params.id);
   const vote = await VotingContract.vote(voting.votingId, candidate, token);
 
   res.status(200).json({
@@ -139,38 +143,13 @@ exports.vote = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.updateVoting = catchAsync(async (req, res, next) => {
-  const filteredBody = filterObject(req.body, 'title', 'description');
-
-  const voting = await findVoting(req.params.id, next);
-  await voting.update(filteredBody, { new: true, runValidators: true });
-
-  res.status(200).json({
-    status: 'success',
-    message: 'Голосування успішно оновлено',
-    data: { voting },
-  });
-});
-
 exports.archiveVoting = catchAsync(async (req, res, next) => {
-  const voting = await findVoting(req.params.id, next);
+  const voting = await findVoting(req.params.id);
   await voting.update({ isArchived: true }, { new: true });
 
   res.status(200).json({
     status: 'success',
     message: 'Голосування архівоване',
-    data: { voting },
-  });
-});
-
-exports.deleteVoting = catchAsync(async (req, res, next) => {
-  const voting = await findVoting(req.params.id, next);
-  await voting.remove();
-  await Ticket.deleteMany({ voting: req.params.id });
-
-  res.status(204).json({
-    status: 'success',
-    message: 'Голосування видалене',
     data: { voting },
   });
 });

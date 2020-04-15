@@ -1,9 +1,11 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const User = require('../models/userModel');
 const Email = require('../utils/email');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
-const User = require('../models/userModel');
+const { hasFields } = require('../utils/object');
+
 const {
   JWT_SECRET,
   JWT_EXPIRES_IN,
@@ -60,13 +62,10 @@ exports.protect = catchAsync(async (req, res, next) => {
 });
 
 exports.login = catchAsync(async (req, res, next) => {
+  hasFields(req.body, 'email', 'password');
   const { email, password } = req.body;
 
-  if (!email || !password)
-    return next(new AppError('Вкажіть будь ласка свою пошту та пароль'));
-
   const user = await User.findOne({ email }).select('+password');
-
   if (!user) {
     return next(new AppError('Користувача з такою поштою немає'));
   }
@@ -76,13 +75,16 @@ exports.login = catchAsync(async (req, res, next) => {
   }
 
   if (user.registrationToken) {
-    return next(new AppError('Користувач не завершив реєстрацію'));
+    return next(new AppError('Цей користувач ще не завершив реєстрацію'));
   }
 
   signTokenAndSend(user, req, res);
 });
 
 exports.signup = catchAsync(async (req, res, next) => {
+  hasFields(req.body, 'passwordConfirm', 'password');
+  const { password, passwordConfirm } = req.body;
+
   const registrationToken = crypto
     .createHash('sha256')
     .update(req.params.token)
@@ -97,13 +99,10 @@ exports.signup = catchAsync(async (req, res, next) => {
       )
     );
 
-  if (!req.body.password || !req.body.passwordConfirm)
-    return next(new AppError('Введіть будь ласка паролі', 400));
-
-  if (req.body.password !== req.body.passwordConfirm)
+  if (password !== passwordConfirm)
     return next(new AppError('Введені паролі не співпадають', 400));
 
-  user.password = req.body.password;
+  user.password = password;
   user.registrationToken = undefined;
   await user.save();
 
@@ -116,7 +115,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   if (!user)
     return next(new AppError('Користувача з такою поштою не існує.', 400));
 
-  const token = user.createPasswordResetToken();
+  const token = user.createToken('passwordResetToken');
   await user.save({ validateBeforeSave: false });
 
   const url = `${req.protocol}://${req.get('host')}/verify/${token}`;

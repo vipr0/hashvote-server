@@ -63,16 +63,19 @@ userSchema.methods.changedPassword = (tokenExpires) => {
   return tokenExpires < this.passwordChangedAt;
 };
 
-userSchema.methods.createPasswordResetToken = function () {
+userSchema.methods.createToken = function (tokenName) {
   const resetToken = crypto.randomBytes(32).toString('hex');
 
-  this.passwordResetToken = crypto
+  this[tokenName] = crypto
     .createHash('sha256')
     .update(resetToken)
     .digest('hex');
 
-  // Reset token will be valid for 24 hours
-  this.passwordResetTokenExpires = Date.now() + 24 * 60 * 1000;
+  console.log(this[tokenName]);
+
+  // Only for passwordResetToken
+  if (tokenName === 'passwordResetToken')
+    this.passwordResetTokenExpires = Date.now() + 24 * 60 * 1000; // 24 hours
 
   return resetToken;
 };

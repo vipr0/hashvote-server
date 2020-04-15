@@ -1,6 +1,7 @@
 const express = require('express');
 const votingController = require('../controllers/votingController');
 const authController = require('../controllers/authController');
+const ticketController = require('../controllers/ticketController');
 
 const router = express.Router();
 
@@ -17,7 +18,10 @@ router
   .get(votingController.getVoting)
   .post(votingController.vote)
   .patch(votingController.updateVoting)
-  .delete(votingController.deleteVoting);
+  .delete(
+    votingController.deleteVoting,
+    ticketController.removeTicketsBy('voting')
+  );
 
 router.post('/:id/start', votingController.startVoting);
 router.post('/:id/archive', votingController.archiveVoting);

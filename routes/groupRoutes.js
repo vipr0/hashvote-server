@@ -19,7 +19,10 @@ router
   .route('/:id')
   .get(groupController.getGroup)
   .patch(groupController.updateGroup)
-  .delete(groupController.deleteGroup);
+  .delete(
+    groupController.deleteGroup,
+    membershipController.removeMembershipsBy('group')
+  );
 
 router
   .route('/:group/users/:user')
