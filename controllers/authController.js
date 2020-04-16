@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/userModel');
-const Email = require('../utils/email');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const { hasFields } = require('../utils/object');
@@ -121,13 +120,9 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   const token = user.createToken('passwordResetToken');
   await user.save({ validateBeforeSave: false });
 
-  const url = `${req.protocol}://${req.get('host')}/verify/${token}`;
-  new Email(user.email).sendResetPassword({ name: user.name, url });
+  req.token = token;
 
-  res.status(200).json({
-    status: 'success',
-    message: 'If you have an account, we`ll email you a reset link',
-  });
+  next();
 });
 
 exports.resetPassword = catchAsync(async (req, res, next) => {

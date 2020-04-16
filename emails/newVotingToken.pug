@@ -1,0 +1,24 @@
+extends base
+
+block content
+  p Hi,
+  p Welcome to KNUBA eVoting. You have been registered for a new voting, with id #{votingId}
+  p In order to give a vote you need a voting token.
+  p This is your token:
+  br
+  p #{token}
+  br
+  p IMPORTANT!!! Save this mail or save this token in some secure place because it`s impossible to recover this token.
+  br
+  p You can get to this voting by clicking a button below.
+  table.btn.btn-primary(role='presentation', border='0', cellpadding='0', cellspacing='0')
+    tbody
+      tr
+        td(align='left')
+          table(role='presentation', border='0', cellpadding='0', cellspacing='0')
+            tbody
+              tr
+                td
+                  a(href=`${url}`, target='_blank') Vote
+  br
+  p Note: You can vote only when this voting will be started. You will be notified by mail when it happens

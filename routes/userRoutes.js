@@ -1,6 +1,7 @@
 const express = require('express');
 const userController = require('../controllers/userController');
 const authController = require('../controllers/authController');
+const emailController = require('../controllers/emailController');
 const membershipController = require('../controllers/membershipController');
 
 const router = express.Router();
@@ -8,7 +9,11 @@ const router = express.Router();
 router.post('/login', authController.login);
 router.post('/signup/:token', authController.signup);
 
-router.post('/forgot', authController.forgotPassword);
+router.post(
+  '/forgot',
+  authController.forgotPassword,
+  emailController.sendResetPassword
+);
 router.post('/reset/:token', authController.resetPassword);
 
 router.use(authController.protect);
@@ -22,7 +27,7 @@ router.get('/search', userController.search);
 router
   .route('/')
   .get(userController.getAllUsers)
-  .post(userController.createUser);
+  .post(userController.createUser, emailController.sendFinishRegistration);
 router
   .route('/:id')
   .get(userController.getUser)

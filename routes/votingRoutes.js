@@ -2,6 +2,7 @@ const express = require('express');
 const votingController = require('../controllers/votingController');
 const authController = require('../controllers/authController');
 const ticketController = require('../controllers/ticketController');
+const emailController = require('../controllers/emailController');
 
 const router = express.Router();
 
@@ -10,7 +11,11 @@ router.use(authController.protect);
 router
   .route('/')
   .get(votingController.getAllVotings)
-  .post(votingController.checkConnection, votingController.createVoting)
+  .post(
+    votingController.checkConnection,
+    votingController.createVoting,
+    emailController.sendAdminToken
+  )
   .delete(votingController.resetVotingSystem);
 
 router
@@ -26,13 +31,16 @@ router
 router.post(
   '/:id/start',
   votingController.checkConnection,
-  votingController.startVoting
+  votingController.startVoting,
+  emailController.sendVotingStarted
 );
 router.post('/:id/archive', votingController.archiveVoting);
 router.post(
   '/:id/group/:group',
   votingController.checkConnection,
-  votingController.addGroupToVoting
+  votingController.addGroupToVoting,
+  ticketController.createTickets,
+  emailController.sendVotingTokens
 );
 
 module.exports = router;

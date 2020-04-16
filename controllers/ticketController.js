@@ -3,6 +3,11 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 const { hasFields } = require('../utils/object');
 
+exports.createTickets = catchAsync(async (req, res, next) => {
+  await Ticket.create(req.users);
+  next();
+});
+
 exports.removeTicket = catchAsync(async (req, res, next) => {
   hasFields(req.body, 'voting', 'user');
   const { user, voting } = req.params;

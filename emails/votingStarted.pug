@@ -1,0 +1,17 @@
+extends base
+
+block content
+  p Hi,
+  p The voting with id #{votingId} was started. Press the button below to give your vote. 
+  table.btn.btn-primary(role='presentation', border='0', cellpadding='0', cellspacing='0')
+    tbody
+      tr
+        td(align='left')
+          table(role='presentation', border='0', cellpadding='0', cellspacing='0')
+            tbody
+              tr
+                td
+                  a(href=`${url}`, target='_blank') Vote
+  br
+  p Please note: you need to have a unique voting token to vote. This token you can find in your previous emails. 
+  p If you don`t receive your voting token please contact administrator

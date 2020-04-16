@@ -3,7 +3,6 @@ const Membership = require('../models/membershipModel');
 const Ticket = require('../models/ticketModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
-const Email = require('../utils/email');
 const { hasFields } = require('../utils/object');
 const VotingContract = require('../utils/contract');
 const {
@@ -26,7 +25,7 @@ exports.deleteVoting = deleteDocument(Voting);
 
 exports.checkConnection = catchAsync(async (req, res, next) => {
   const connected = await VotingContract.isConnected();
-  if (!connected) next(new AppError('Not connected to blockchain', 500));
+  if (!connected) return next(new AppError('Not connected to blockchain', 500));
   next();
 });
 
@@ -41,7 +40,7 @@ exports.getVoting = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     message: 'Successfull query',
-    data: { voting, ...contract, voteResult },
+    result: { voting, ...contract, voteResult },
   });
 });
 
@@ -62,12 +61,10 @@ exports.createVoting = catchAsync(async (req, res, next) => {
     tx,
   });
 
-  res.status(200).json({
-    status: 'success',
-    message: 'Successfully created new voting',
-    adminToken,
-    data: { voting },
-  });
+  req.voting = voting;
+  req.adminToken = adminToken;
+
+  next();
 });
 
 exports.addGroupToVoting = catchAsync(async (req, res, next) => {
@@ -84,7 +81,18 @@ exports.addGroupToVoting = catchAsync(async (req, res, next) => {
   // eslint-disable-next-line no-restricted-syntax
   for await (const user of groupUsers) {
     const ticket = await Ticket.findOne({ voting: id, user: user.user._id });
-    if (!ticket) await filteredUsers.push(user);
+    if (!ticket)
+      await filteredUsers.push({
+        user: user.user._id,
+        email: user.user.email,
+        voting: id,
+      });
+  }
+
+  if (!filteredUsers.length) {
+    return next(
+      new AppError('No more voters found to add to this voting', 404)
+    );
   }
 
   const { result, tokens } = await VotingContract.addTokens(
@@ -93,30 +101,11 @@ exports.addGroupToVoting = catchAsync(async (req, res, next) => {
     filteredUsers.length
   );
 
-  if (!filteredUsers.length) {
-    return next(
-      new AppError('No more voters found to add to this voting', 404)
-    );
-  }
+  req.users = filteredUsers;
+  req.tokens = tokens;
+  req.result = result;
 
-  // eslint-disable-next-line no-restricted-syntax
-  for await (const [i, user] of filteredUsers.entries()) {
-    await Ticket.create({
-      user: user.user._id,
-      voting: id,
-    });
-
-    await new Email(user.user.email).sendVotingToken({
-      token: tokens[i],
-      url: 'localhost',
-    });
-  }
-
-  res.status(200).json({
-    status: 'success',
-    message: 'Successfuly added group to voting',
-    data: { result, tokens },
-  });
+  next();
 });
 
 exports.startVoting = catchAsync(async (req, res, next) => {
@@ -124,13 +113,9 @@ exports.startVoting = catchAsync(async (req, res, next) => {
   const { token } = req.body;
 
   const voting = await findVoting(req.params.id);
-  const result = await VotingContract.startVoting(voting.votingId, token);
+  await VotingContract.startVoting(voting.votingId, token);
 
-  res.status(200).json({
-    status: 'success',
-    message: 'Voting started',
-    data: { result },
-  });
+  next();
 });
 
 exports.vote = catchAsync(async (req, res, next) => {
@@ -143,7 +128,7 @@ exports.vote = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     message: 'Successfully voted',
-    data: { vote },
+    result: vote,
   });
 });
 
@@ -154,7 +139,7 @@ exports.archiveVoting = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     message: 'Voting archived',
-    data: { voting },
+    result: voting,
   });
 });
 

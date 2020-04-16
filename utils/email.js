@@ -1,49 +1,86 @@
-const EmailTemplate = require('email-templates');
+const nodemailer = require('nodemailer');
+const pug = require('pug');
+const htmlToText = require('html-to-text');
 
-class Email {
-  constructor(to) {
-    this.to = to;
-  }
+const {
+  EMAIL_HOST,
+  EMAIL_PORT,
+  EMAIL_USERNAME,
+  EMAIL_PASSWORD,
+  EMAIL_APP_URL,
+} = require('../config');
 
-  async send(template, subject, locals) {
-    const email = new EmailTemplate({
-      message: {
-        from: 'h1@example.com',
-      },
-      send: true,
-      transport: {
-        host: 'smtp.mailtrap.io',
-        port: 2525,
-        ssl: false,
-        tls: true,
-        auth: {
-          user: '26112db3fbac79',
-          pass: '2777e20b050abe',
-        },
-      },
-    });
+const sendMail = async (to, templateName, variables, subject) => {
+  // 1 Creating transport
+  const transport = nodemailer.createTransport({
+    host: EMAIL_HOST,
+    port: EMAIL_PORT,
+    auth: {
+      user: EMAIL_USERNAME,
+      pass: EMAIL_PASSWORD,
+    },
+  });
 
-    await email.send({
-      template,
-      message: {
-        to: this.to,
-        subject,
-      },
-      locals,
-    });
-  }
+  // 1) Render HTML based on a pug template
+  const html = pug.renderFile(
+    `${__dirname}/../emails/${templateName}.pug`,
+    variables
+  );
 
-  async sendWelcome(locals) {
-    await this.send('welcome', 'Реєстрація', locals);
-  }
+  // 2) Define email options
+  const mailOptions = {
+    from: 'Vitaliy Protsyk <administrator@example.com>',
+    to,
+    subject: subject,
+    html,
+    text: htmlToText.fromString(html),
+  };
 
-  async sendResetPassword(locals) {
-    await this.send('resetPassword', 'Відновлення паролю', locals);
-  }
+  // 3) Create a transport and send email
+  await transport.sendMail(mailOptions);
+};
 
-  async sendVotingToken(locals) {
-    await this.send('votingToken', 'Голосування робпочато', locals);
-  }
-}
+exports.sendFinishRegistration = async (to, token) => {
+  await sendMail(
+    to,
+    'finishRegistration',
+    { token, url: `${EMAIL_APP_URL}/signup/${token}` },
+    'Finish registration'
+  );
+};
 
-module.exports = Email;
+exports.sendResetPassword = async (to, token) => {
+  await sendMail(
+    to,
+    'resetPassword',
+    { token, url: `${EMAIL_APP_URL}/reset/${token}` },
+    'Confirm reset password'
+  );
+};
+
+exports.sendVotingToken = async (to, votingId, token) => {
+  await sendMail(
+    to,
+    'newVotingToken',
+    { votingId, token, url: `${EMAIL_APP_URL}/votings/${votingId}` },
+    'Token for a new voting'
+  );
+};
+
+exports.sendAdminToken = async (to, votingId, token) => {
+  await sendMail(
+    to,
+    'newAdminToken',
+    { votingId, token, url: `${EMAIL_APP_URL}/votings/${votingId}` },
+    'Created new voting'
+  );
+};
+
+exports.sendVotingStarted = async (to, votingId) => {
+  await sendMail(
+    to,
+    'votingStarted',
+    { url: `${EMAIL_APP_URL}/votings/${votingId}`, votingId },
+    'Voting has been started!'
+  );
+};
