@@ -14,7 +14,7 @@ const {
 
 const findVoting = async (id) => {
   const voting = await Voting.findById(id);
-  if (!voting) throw new AppError('Такого голосування не існує', 404);
+  if (!voting) throw new AppError('No voting with this ID', 404);
   return voting;
 };
 
@@ -23,6 +23,12 @@ exports.getAllVotings = getAllDocuments(Voting);
 exports.updateVoting = updateDocument(Voting, ['title', 'description']);
 
 exports.deleteVoting = deleteDocument(Voting);
+
+exports.checkConnection = catchAsync(async (req, res, next) => {
+  const connected = await VotingContract.isConnected();
+  if (!connected) next(new AppError('Not connected to blockchain', 500));
+  next();
+});
 
 exports.getVoting = catchAsync(async (req, res, next) => {
   const voting = await findVoting(req.params.id);
@@ -34,7 +40,7 @@ exports.getVoting = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    message: 'Голосування знайдено',
+    message: 'Successfull query',
     data: { voting, ...contract, voteResult },
   });
 });
@@ -43,11 +49,9 @@ exports.createVoting = catchAsync(async (req, res, next) => {
   hasFields(req.body, 'title', 'description', 'candidates', 'endTime');
   const { title, description, candidates, endTime } = req.body;
 
-  // 2. Create new voting in smart contract with all voting tokens
   const result = await VotingContract.createVoting(candidates, endTime);
   const { votingId, adminToken, tx } = result;
 
-  // 3. Create new voting in DB
   const voting = await Voting.create({
     title,
     description,
@@ -60,7 +64,7 @@ exports.createVoting = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    message: 'Нове голосування успішно створено',
+    message: 'Successfully created new voting',
     adminToken,
     data: { voting },
   });
@@ -73,7 +77,7 @@ exports.addGroupToVoting = catchAsync(async (req, res, next) => {
   const voting = await findVoting(id);
 
   const isStarted = await VotingContract.votingStarted(voting.votingId);
-  if (isStarted) return next(new AppError('Голосування вже розпочато', 400));
+  if (isStarted) return next(new AppError('Voting is already started', 400));
 
   const groupUsers = await Membership.find({ group }).populate('user').lean();
 
@@ -91,7 +95,7 @@ exports.addGroupToVoting = catchAsync(async (req, res, next) => {
 
   if (!filteredUsers.length) {
     return next(
-      new AppError('Не знайдено нових користувачів для додавання', 404)
+      new AppError('No more voters found to add to this voting', 404)
     );
   }
 
@@ -110,7 +114,7 @@ exports.addGroupToVoting = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    message: 'Групу додано до голосування',
+    message: 'Successfuly added group to voting',
     data: { result, tokens },
   });
 });
@@ -124,7 +128,7 @@ exports.startVoting = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    message: 'Голосування розпочато',
+    message: 'Voting started',
     data: { result },
   });
 });
@@ -138,7 +142,7 @@ exports.vote = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    message: 'Успішно проголосовано',
+    message: 'Successfully voted',
     data: { vote },
   });
 });
@@ -149,7 +153,7 @@ exports.archiveVoting = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    message: 'Голосування архівоване',
+    message: 'Voting archived',
     data: { voting },
   });
 });
@@ -160,6 +164,6 @@ exports.resetVotingSystem = catchAsync(async (req, res, next) => {
 
   res.status(204).json({
     status: 'success',
-    message: 'Голосування видалене',
+    message: 'Voting deleted',
   });
 });

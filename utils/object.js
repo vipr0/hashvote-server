@@ -13,7 +13,6 @@ exports.filterObject = (obj, ...allowedFields) => {
 exports.hasFields = (obj, ...fields) => {
   // Check if allowed fields are not empty
   fields.forEach((field) => {
-    if (!obj[field])
-      throw new AppError('Перевірте чи всі поля були введені', 400);
+    if (!obj[field]) throw new AppError('Check if you entered all fields', 400);
   });
 };

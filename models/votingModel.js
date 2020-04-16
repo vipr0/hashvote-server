@@ -3,35 +3,35 @@ const mongoose = require('mongoose');
 const votingSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: [true, 'Введіть будь ласка назву голосування'],
+    required: [true, 'Voting title is required'],
   },
   description: {
     type: String,
-    required: [true, 'Введіть будь ласка опис'],
+    required: [true, 'Voting description is required'],
   },
   votingId: {
     type: String,
     unique: true,
-    required: [true, 'Вкажіть id голосування'],
+    required: [true, 'Voting ID is required'],
   },
   candidates: {
     type: [String],
-    required: [true, 'Вкажіть варіанти голосування'],
+    required: [true, 'Candidates are required'],
     validate: {
       validator: function (val) {
         return val.length >= 2;
       },
-      message: 'Повинно бути як мінімум 2 варіанти голосування',
+      message: 'At leaset 2 candidates are required',
     },
   },
   endTime: {
     type: Date,
-    required: [true, 'Вкажіть дату закінчення голосування'],
+    required: [true, 'End time is required'],
     validate: {
       validator: function (val) {
         return val > Date.now();
       },
-      message: 'Виберіть дату в майбутньому',
+      message: 'End time must be in the future',
     },
   },
   groups: [
@@ -50,7 +50,7 @@ const votingSchema = new mongoose.Schema({
   },
   tx: {
     type: String,
-    required: [true, 'Голосування повинне мати транзакцію створення'],
+    required: [true, 'Voting must have transaction hash of creation'],
   },
   isArchived: {
     type: Boolean,

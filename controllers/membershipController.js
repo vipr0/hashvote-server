@@ -13,18 +13,18 @@ exports.addMembership = catchAsync(async (req, res, next) => {
   const userDoc = await User.findById(user);
 
   if (!userDoc) {
-    return next(new AppError('Неправильний id користувача', 404));
+    return next(new AppError('Incorrect user ID', 404));
   }
 
   if (!groupDoc) {
-    return next(new AppError('Неправильний id групи', 404));
+    return next(new AppError('Incorrect group ID', 404));
   }
 
   await Membership.create({ group, user });
 
   res.status(200).json({
     status: 'success',
-    message: 'Користувача додано в групу',
+    message: 'User added to group',
   });
 });
 
@@ -33,11 +33,11 @@ exports.removeMembership = catchAsync(async (req, res, next) => {
   const { user, group } = req.params;
 
   const result = await Membership.findOneAndDelete({ user, group });
-  if (!result) return next(new AppError('Такого документа не знайдено', 404));
+  if (!result) return next(new AppError('Incorrect membership ID', 404));
 
   res.status(200).json({
     status: 'success',
-    message: 'Користувача видалено з групи',
+    message: 'User removed from group',
   });
 });
 
@@ -47,6 +47,6 @@ exports.removeMembershipsBy = (field) =>
 
     res.status(204).json({
       status: 'success',
-      message: 'Група видалена',
+      message: 'Succesfully deleted',
     });
   });

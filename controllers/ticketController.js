@@ -8,11 +8,11 @@ exports.removeTicket = catchAsync(async (req, res, next) => {
   const { user, voting } = req.params;
 
   const result = await Ticket.findOneAndDelete({ user, voting });
-  if (!result) return next(new AppError('Такого документа не знайдено', 404));
+  if (!result) return next(new AppError('No ticket with this ID', 404));
 
   res.status(200).json({
     status: 'success',
-    message: 'Тікет видалено',
+    message: 'Ticket deleted',
   });
 });
 
@@ -22,6 +22,6 @@ exports.removeTicketsBy = (field) =>
 
     res.status(204).json({
       status: 'success',
-      message: 'Успішно видалено',
+      message: 'Successfully deleted',
     });
   });

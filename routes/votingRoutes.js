@@ -10,21 +10,29 @@ router.use(authController.protect);
 router
   .route('/')
   .get(votingController.getAllVotings)
-  .post(votingController.createVoting)
+  .post(votingController.checkConnection, votingController.createVoting)
   .delete(votingController.resetVotingSystem);
 
 router
   .route('/:id')
-  .get(votingController.getVoting)
-  .post(votingController.vote)
+  .get(votingController.checkConnection, votingController.getVoting)
+  .post(votingController.checkConnection, votingController.vote)
   .patch(votingController.updateVoting)
   .delete(
     votingController.deleteVoting,
     ticketController.removeTicketsBy('voting')
   );
 
-router.post('/:id/start', votingController.startVoting);
+router.post(
+  '/:id/start',
+  votingController.checkConnection,
+  votingController.startVoting
+);
 router.post('/:id/archive', votingController.archiveVoting);
-router.post('/:id/group/:group', votingController.addGroupToVoting);
+router.post(
+  '/:id/group/:group',
+  votingController.checkConnection,
+  votingController.addGroupToVoting
+);
 
 module.exports = router;

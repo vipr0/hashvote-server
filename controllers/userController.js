@@ -13,7 +13,7 @@ const {
 
 const findUser = async (id) => {
   const user = await User.findById(id);
-  if (!user) throw new AppError('Користувача з таким id не існує', 404);
+  if (!user) throw new AppError('No user with this ID', 404);
   return user;
 };
 
@@ -39,7 +39,7 @@ exports.createUser = catchAsync(async (req, res, next) => {
 
   res.status(201).json({
     status: 'success',
-    message: 'Користувач створений',
+    message: 'User created',
     result: user,
   });
 });
@@ -51,7 +51,7 @@ exports.updateMyData = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    message: 'Ваші дані успішно змінено',
+    message: 'Your data was successfully updated',
     result: user,
   });
 });
@@ -61,12 +61,12 @@ exports.updateMyPassword = catchAsync(async (req, res, next) => {
   const { password, newPassword, newPasswordConfirm } = req.body;
 
   if (newPassword !== newPasswordConfirm)
-    return next(new AppError('Нові паролі не співпадають', 400));
+    return next(new AppError('New passwords are not the same', 400));
 
   const user = await User.findById(req.user.id).select('+password');
 
   if (!(await user.correctPassword(password, user.password))) {
-    return next(new AppError('Неправильний старий пароль.', 401));
+    return next(new AppError('Incorrect old password', 401));
   }
 
   user.password = newPassword;
@@ -74,7 +74,7 @@ exports.updateMyPassword = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    message: 'Пароль успішно змінено',
+    message: 'Password successfully updated',
     data: { user },
   });
 });

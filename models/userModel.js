@@ -7,14 +7,14 @@ const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Введіть будь-ласка своє ім`я'],
+      required: [true, 'Name is required'],
     },
     email: {
       type: String,
-      required: [true, 'Введіть будь-ласка свій email'],
+      required: [true, 'Email is required'],
       unique: true,
       lowercase: true,
-      validate: [validator.isEmail, 'Введіть будь-ласка правильний email'],
+      validate: [validator.isEmail, 'Invalid email'],
     },
     role: {
       type: String,
@@ -23,7 +23,6 @@ const userSchema = new mongoose.Schema(
     },
     photo: {
       type: String,
-      default: 'default.jpg',
     },
     password: {
       type: String,
@@ -70,8 +69,6 @@ userSchema.methods.createToken = function (tokenName) {
     .createHash('sha256')
     .update(resetToken)
     .digest('hex');
-
-  console.log(this[tokenName]);
 
   // Only for passwordResetToken
   if (tokenName === 'passwordResetToken')

@@ -5,6 +5,7 @@ const Web3 = require('web3');
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 const contract = require('@truffle/contract');
 const { PRIVATE_KEY, INFURA_KEY, NODE_ENV } = require('../config');
+const AppError = require('./AppError');
 
 const generateTokensArray = (length) => {
   const tokens = [];
@@ -42,7 +43,20 @@ const loadContract = async (provider) => {
   return contractObject;
 };
 
+exports.isConnected = async () => {
+  try {
+    const web3 = new Web3(providers[NODE_ENV]);
+    const connection = await web3.eth.getNodeInfo();
+    if (connection) return true;
+  } catch (error) {
+    return false;
+  }
+};
+
 exports.createVoting = async (candidates, endTime) => {
+  if (typeof candidates !== 'object') {
+    throw new AppError('Candidates must be an array of strings');
+  }
   const votingId = Web3.utils.randomHex(32);
   const adminToken = Web3.utils.randomHex(32);
 
@@ -106,8 +120,9 @@ exports.getContractInfo = async (votingId) => {
   const votersTotal = (await instance.votersTotal(votingId)).toNumber();
   const endTime = (await instance.endTime(votingId)).toNumber();
   const votingExists = await instance.votingExists(votingId);
+  const votingStarted = await instance.votingStarted(votingId);
 
-  return { alreadyVoted, votersTotal, endTime, votingExists };
+  return { alreadyVoted, votersTotal, endTime, votingExists, votingStarted };
 };
 
 exports.totalVotesGiven = async (votingId, candidates) => {

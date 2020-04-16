@@ -4,7 +4,7 @@ const groupSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Введіть будь-ласка назву групи'],
+      required: [true, 'Please enter group name'],
     },
     hostedBy: {
       type: mongoose.Schema.ObjectId,

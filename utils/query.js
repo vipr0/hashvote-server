@@ -4,7 +4,7 @@ const { filterObject, hasFields } = require('./object');
 
 const findById = async (Model, id) => {
   const group = await Model.findById(id);
-  if (!group) throw new AppError('Хибний id запиту', 404);
+  if (!group) throw new AppError(`Invalid ID (${id})`, 404);
   return group;
 };
 
@@ -19,7 +19,7 @@ exports.search = (Model, fields) =>
 
     res.status(200).json({
       status: 'success',
-      message: 'Успішний запит',
+      message: 'Succesfull request',
       result,
     });
   });
@@ -30,7 +30,7 @@ exports.getAllDocuments = (Model) =>
 
     res.status(200).json({
       status: 'success',
-      message: 'Успішний запит',
+      message: 'Succesfull request',
       result,
     });
   });
@@ -40,7 +40,7 @@ exports.getDocument = (Model) =>
     const result = await findById(Model, req.params.id);
     res.status(200).json({
       status: 'success',
-      message: 'Успішний запит',
+      message: 'Succesfull request',
       result,
     });
   });
@@ -53,7 +53,7 @@ exports.createDocument = (Model, fields) =>
     const result = await Model.create(filteredBody);
     res.status(201).json({
       status: 'success',
-      message: 'Успішно створено',
+      message: 'Succesfully created',
       result,
     });
   });
@@ -67,7 +67,7 @@ exports.updateDocument = (Model, fields) =>
 
     res.status(200).json({
       status: 'success',
-      message: 'Успішно оновлено',
+      message: 'Succesfully updated',
       result,
     });
   });
@@ -78,7 +78,9 @@ exports.deleteDocument = (Model, lastMiddleware = false) =>
     await result.remove();
 
     if (lastMiddleware) {
-      res.status(204).json({ status: 'success', message: 'Успішно видалено' });
+      res
+        .status(204)
+        .json({ status: 'success', message: 'Succesfully deleted' });
     } else {
       next();
     }

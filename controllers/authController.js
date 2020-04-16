@@ -27,7 +27,7 @@ const signTokenAndSend = (user, req, res) => {
 
   res.status(200).json({
     status: 'success',
-    message: 'Успішно авторизовано',
+    message: 'Successfully logged in',
     token,
     data: { user },
   });
@@ -44,17 +44,21 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   if (!token)
     return next(
-      new AppError('Ви не авторизовані. Авторизуйтесь щоб отримати доступ', 401)
+      new AppError('You are not looged in. Log in to get access', 401)
     );
 
   const decoded = await jwt.decode(token, JWT_SECRET);
   const user = await User.findById(decoded.id);
 
   if (!decoded || !user)
-    return next(new AppError('Неправильний токен. Авторизуйтесь заново', 401));
+    return next(
+      new AppError('Invalid authorization token. Please log in again', 401)
+    );
 
   if (user.changedPassword(decoded.iat))
-    return next(new AppError('Ваш пароль змінено. Авторизуйтесь заново', 401));
+    return next(
+      new AppError('Your password was changed. Please log in again', 401)
+    );
 
   req.user = user;
 
@@ -67,15 +71,15 @@ exports.login = catchAsync(async (req, res, next) => {
 
   const user = await User.findOne({ email }).select('+password');
   if (!user) {
-    return next(new AppError('Користувача з такою поштою немає'));
+    return next(new AppError('Incorrect email'));
   }
 
   if (!(await user.correctPassword(password, user.password))) {
-    return next(new AppError('Неправильний пароль.', 400));
+    return next(new AppError('Incorrect password', 400));
   }
 
   if (user.registrationToken) {
-    return next(new AppError('Цей користувач ще не завершив реєстрацію'));
+    return next(new AppError('You have not finished registration'));
   }
 
   signTokenAndSend(user, req, res);
@@ -94,13 +98,13 @@ exports.signup = catchAsync(async (req, res, next) => {
   if (!user)
     return next(
       new AppError(
-        'Неправильний код реєстрації. Зверніться до адміністратора',
+        'Invalid registration token. Please contact administrator',
         400
       )
     );
 
   if (password !== passwordConfirm)
-    return next(new AppError('Введені паролі не співпадають', 400));
+    return next(new AppError('Passwords do not match', 400));
 
   user.password = password;
   user.registrationToken = undefined;
@@ -112,8 +116,7 @@ exports.signup = catchAsync(async (req, res, next) => {
 exports.forgotPassword = catchAsync(async (req, res, next) => {
   const user = await User.findOne({ email: req.body.email });
 
-  if (!user)
-    return next(new AppError('Користувача з такою поштою не існує.', 400));
+  if (!user) return next(new AppError('Incorrect email', 400));
 
   const token = user.createToken('passwordResetToken');
   await user.save({ validateBeforeSave: false });
@@ -123,7 +126,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    message: 'Посилання на відновлення відправлено на Вашу пошту.',
+    message: 'If you have an account, we`ll email you a reset link',
   });
 });
 
@@ -135,15 +138,12 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
   const user = await User.findOne({ passwordResetToken });
 
+  if (!user) return next(new AppError('Incorrect password reset token', 400));
   if (req.body.password !== req.body.passwordConfirm)
-    return next(new AppError('Введені паролі не співпадають', 400));
-  if (!user) return next(new AppError('Неправильний код відновлення', 400));
+    return next(new AppError('Passwords do not match', 400));
   if (user.resetTokenExpired(Date.now()))
     return next(
-      new AppError(
-        'Час коду відновлення вийшов. Спробуйте відновити пароль ще раз',
-        400
-      )
+      new AppError('Password reset token was expired. Send request again', 400)
     );
 
   user.password = req.body.password;
@@ -158,7 +158,7 @@ exports.restrictTo = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role))
       return next(
-        new AppError('У вас недостатньо прав для виконання цієї операції', 403)
+        new AppError('You don`t have permissions to do this operation', 403)
       );
 
     next();
