@@ -20,7 +20,7 @@ const providers = {
     PRIVATE_KEY,
     `https://kovan.infura.io/v3/${INFURA_KEY}`
   ),
-  development: new Web3.providers.HttpProvider('http://127.0.0.1:7545'),
+  development: new Web3.providers.HttpProvider('http://127.0.0.1:8545'),
 };
 
 const loadContract = async (provider) => {
@@ -126,15 +126,18 @@ exports.getContractInfo = async (votingId) => {
 };
 
 exports.totalVotesGiven = async (votingId, candidates) => {
-  const result = {};
+  const result = [];
   const VotingPlatform = await loadContract(providers[NODE_ENV]);
   const instance = await VotingPlatform.deployed();
 
   // eslint-disable-next-line no-restricted-syntax
   for await (const candidate of candidates) {
-    result[candidate] = (
-      await instance.totalVotesFor(votingId, Web3.utils.utf8ToHex(candidate))
-    ).toNumber();
+    result.push({
+      name: candidate,
+      votesNum: (
+        await instance.totalVotesFor(votingId, Web3.utils.utf8ToHex(candidate))
+      ).toNumber(),
+    });
   }
 
   return result;

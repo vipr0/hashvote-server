@@ -27,7 +27,7 @@ module.exports = {
         ),
       network_id: 42,
       gas: 5500000,
-      confirmations: 2,
+      confirmations: 1,
     },
   },
 
