@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
@@ -18,6 +19,9 @@ const app = express();
 // Implement CORS
 app.use(cors());
 app.options('*', cors());
+
+// Serving static files
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Security HTTP headers
 app.use(helmet());

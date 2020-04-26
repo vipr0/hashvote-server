@@ -56,6 +56,10 @@ const votingSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isStarted: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const Voting = mongoose.model('Voting', votingSchema);

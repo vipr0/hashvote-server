@@ -28,6 +28,11 @@ router
     ticketController.removeTicketsBy('voting')
   );
 
+router.get(
+  '/:id/contractinfo',
+  votingController.checkConnection,
+  votingController.getVotingFromContract
+);
 router.post(
   '/:id/start',
   votingController.checkConnection,

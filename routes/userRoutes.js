@@ -18,7 +18,13 @@ router.post('/reset/:token', authController.resetPassword);
 
 router.use(authController.protect);
 
-router.patch('/me/data', userController.updateMyData);
+router.get('/me', userController.getMyData);
+router.patch(
+  '/me/data',
+  userController.uploadUserPhoto,
+  userController.resizeUserPhoto,
+  userController.updateMyData
+);
 router.patch('/me/password', userController.updateMyPassword);
 
 router.use(authController.restrictTo('admin'));

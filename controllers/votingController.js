@@ -31,6 +31,17 @@ exports.checkConnection = catchAsync(async (req, res, next) => {
 
 exports.getVoting = catchAsync(async (req, res, next) => {
   const voting = await findVoting(req.params.id);
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Successfull query',
+    result: voting,
+  });
+});
+
+exports.getVotingFromContract = catchAsync(async (req, res, next) => {
+  const voting = await findVoting(req.params.id);
+
   const contract = await VotingContract.getContractInfo(voting.votingId);
   const voteResult = await VotingContract.totalVotesGiven(
     voting.votingId,
@@ -40,7 +51,7 @@ exports.getVoting = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     message: 'Successfull query',
-    result: { voting, ...contract, voteResult },
+    result: { ...contract, voteResult },
   });
 });
 
@@ -114,6 +125,7 @@ exports.startVoting = catchAsync(async (req, res, next) => {
 
   const voting = await findVoting(req.params.id);
   await VotingContract.startVoting(voting.votingId, token);
+  await voting.updateOne({ isStarted: true });
 
   next();
 });
@@ -134,7 +146,7 @@ exports.vote = catchAsync(async (req, res, next) => {
 
 exports.archiveVoting = catchAsync(async (req, res, next) => {
   const voting = await findVoting(req.params.id);
-  await voting.update({ isArchived: true }, { new: true });
+  await voting.updateOne({ isArchived: true }, { new: true });
 
   res.status(200).json({
     status: 'success',
