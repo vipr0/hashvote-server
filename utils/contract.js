@@ -2,9 +2,10 @@ const fs = require('fs');
 const { promisify } = require('util');
 const path = require('path');
 const Web3 = require('web3');
+const ganache = require('ganache-cli');
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 const contract = require('@truffle/contract');
-const { PRIVATE_KEY, INFURA_KEY, NODE_ENV } = require('../config');
+const { PRIVATE_KEY, INFURA_KEY, NODE_ENV, MNEMONIC } = require('../config');
 const AppError = require('./AppError');
 
 const generateTokensArray = (length) => {
@@ -20,7 +21,11 @@ const providers = {
     PRIVATE_KEY,
     `https://kovan.infura.io/v3/${INFURA_KEY}`
   ),
-  development: new Web3.providers.HttpProvider('http://127.0.0.1:8545'),
+  development: ganache.provider({
+    db_path: './ganache-db',
+    network_id: 5777,
+    mnemonic: MNEMONIC,
+  }),
 };
 
 const loadContract = async (provider) => {
