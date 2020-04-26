@@ -1,28 +1,23 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
+const ganache = require('ganache-cli');
 
-const { PRIVATE_KEY, INFURA_KEY } = require('./config');
+const { INFURA_KEY, MNEMONIC } = require('./config');
 
 module.exports = {
   networks: {
     development: {
-      host: '127.0.0.1', // Localhost (default: none)
-      port: 8545, // Standard Ethereum port (default: none)
-      network_id: '5777', // Any network (default: none)
+      provider: () =>
+        ganache.provider({
+          db_path: './ganache-db',
+          network_id: 5777,
+          mnemonic: MNEMONIC,
+        }),
+      network_id: 5777,
     },
-    ropsten: {
+    production: {
       provider: () =>
         new HDWalletProvider(
-          PRIVATE_KEY,
-          `https://ropsten.infura.io/v3/${INFURA_KEY}`
-        ),
-      network_id: 3,
-      gas: 5500000,
-      confirmations: 2,
-    },
-    kovan: {
-      provider: () =>
-        new HDWalletProvider(
-          PRIVATE_KEY,
+          MNEMONIC,
           `https://kovan.infura.io/v3/${INFURA_KEY}`
         ),
       network_id: 42,
