@@ -1,5 +1,9 @@
+const multer = require('multer');
+const path = require('path');
+const neatCsv = require('neat-csv');
+
+const User = require('../models/userModel');
 const Voting = require('../models/votingModel');
-const Membership = require('../models/membershipModel');
 const Ticket = require('../models/ticketModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
@@ -10,6 +14,18 @@ const {
   updateDocument,
   deleteDocument,
 } = require('../utils/query');
+
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (req, file, cb) => {
+  if (path.extname(file.originalname) === '.csv') {
+    cb(null, true);
+  } else {
+    cb(new AppError('Not an .csv file! Please upload only csv', 400), false);
+  }
+};
+
+const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
 
 const findVoting = async (id) => {
   const voting = await Voting.findById(id);
@@ -78,27 +94,37 @@ exports.createVoting = catchAsync(async (req, res, next) => {
   next();
 });
 
-exports.addGroupToVoting = catchAsync(async (req, res, next) => {
-  const { group, id } = req.params;
-  const filteredUsers = [];
+exports.uploadCSVFile = upload.single('file');
 
-  const voting = await findVoting(id);
-
-  const isStarted = await VotingContract.votingStarted(voting.votingId);
-  if (isStarted) return next(new AppError('Voting is already started', 400));
-
-  const groupUsers = await Membership.find({ group }).populate('user').lean();
-
-  // eslint-disable-next-line no-restricted-syntax
-  for await (const user of groupUsers) {
-    const ticket = await Ticket.findOne({ voting: id, user: user.user._id });
-    if (!ticket)
-      await filteredUsers.push({
-        user: user.user._id,
-        email: user.user.email,
-        voting: id,
-      });
+exports.addUsers = catchAsync(async (req, res, next) => {
+  if (!req.file) {
+    return next(new AppError('No file was uploaded'));
   }
+
+  const voting = await findVoting(req.params.id);
+  if (voting.isStarted)
+    return next(new AppError('Voting is already started', 400));
+
+  const csv = await neatCsv(req.file.buffer, { headers: ['email'] });
+  const emails = csv.map((row) => row.email);
+  if (!emails.length)
+    return next(new AppError('No emails found, check your file', 400));
+
+  const users = await User.find({ email: { $in: emails } });
+  if (!users.length)
+    return next(
+      new AppError('No users found with those emails, check emails', 400)
+    );
+
+  const tickets = await Ticket.find({
+    user: { $in: users.map((user) => user._id) },
+    voting: req.params.id,
+  });
+
+  const filteredUsers = await User.find({
+    email: { $in: emails },
+    _id: { $nin: tickets.map((ticket) => ticket.user) },
+  });
 
   if (!filteredUsers.length) {
     return next(

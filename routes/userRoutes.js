@@ -2,7 +2,6 @@ const express = require('express');
 const userController = require('../controllers/userController');
 const authController = require('../controllers/authController');
 const emailController = require('../controllers/emailController');
-const membershipController = require('../controllers/membershipController');
 
 const router = express.Router();
 
@@ -38,14 +37,6 @@ router
   .route('/:id')
   .get(userController.getUser)
   .patch(userController.updateUser)
-  .delete(
-    userController.deleteUser,
-    membershipController.removeMembershipsBy('user')
-  );
-
-router
-  .route('/:user/groups/:group')
-  .post(membershipController.addMembership)
-  .delete(membershipController.removeMembership);
+  .delete(userController.deleteUser);
 
 module.exports = router;

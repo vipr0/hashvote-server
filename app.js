@@ -11,7 +11,6 @@ const xss = require('xss-clean');
 const AppError = require('./utils/AppError');
 const userRouter = require('./routes/userRoutes');
 const votingRouter = require('./routes/votingRoutes');
-const groupRouter = require('./routes/groupRoutes');
 const errorController = require('./controllers/errorController');
 
 const app = express();
@@ -28,7 +27,7 @@ app.use(helmet());
 
 // Rate limiter
 const limiter = rateLimit({
-  max: 100,
+  max: 10000,
   windowMs: 60 * 60 * 1000,
   message: 'Too many requests from this IP, please try again in an hour',
 });
@@ -50,7 +49,6 @@ app.use(compression());
 // Routes
 app.use('/api/v1/votings', votingRouter);
 app.use('/api/v1/users', userRouter);
-app.use('/api/v1/groups', groupRouter);
 
 app.use('*', (req, res, next) => {
   next(new AppError('Такої сторінки не знайдено', 404));

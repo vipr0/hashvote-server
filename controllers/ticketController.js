@@ -4,7 +4,9 @@ const AppError = require('../utils/AppError');
 const { hasFields } = require('../utils/object');
 
 exports.createTickets = catchAsync(async (req, res, next) => {
-  await Ticket.create(req.users);
+  await Ticket.create(
+    req.users.map((user) => ({ user: user._id, voting: req.params.id }))
+  );
   next();
 });
 

@@ -41,9 +41,10 @@ router.post(
 );
 router.post('/:id/archive', votingController.archiveVoting);
 router.post(
-  '/:id/group/:group',
+  '/:id/users',
   votingController.checkConnection,
-  votingController.addGroupToVoting,
+  votingController.uploadCSVFile,
+  votingController.addUsers,
   ticketController.createTickets,
   emailController.sendVotingTokens
 );

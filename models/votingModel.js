@@ -34,12 +34,6 @@ const votingSchema = new mongoose.Schema({
       message: 'End time must be in the future',
     },
   },
-  groups: [
-    {
-      type: mongoose.Schema.ObjectId,
-      ref: 'Group',
-    },
-  ],
   createdBy: {
     type: mongoose.Schema.ObjectId,
     ref: 'User',
