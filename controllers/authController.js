@@ -27,8 +27,7 @@ const signTokenAndSend = (user, req, res) => {
   res.status(200).json({
     status: 'success',
     message: 'Successfully logged in',
-    token,
-    data: { user },
+    result: { token, user },
   });
 };
 
@@ -73,12 +72,12 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError('Incorrect email'));
   }
 
-  if (!(await user.correctPassword(password, user.password))) {
-    return next(new AppError('Incorrect password', 400));
-  }
-
   if (user.registrationToken) {
     return next(new AppError('You have not finished registration'));
+  }
+
+  if (!(await user.correctPassword(password, user.password))) {
+    return next(new AppError('Incorrect password', 400));
   }
 
   signTokenAndSend(user, req, res);

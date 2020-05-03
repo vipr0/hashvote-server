@@ -45,7 +45,7 @@ exports.sendResetPassword = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    message: 'If you have an account, we`ll email you a reset link',
+    message: 'We`ll email you a reset link',
   });
 });
 
