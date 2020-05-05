@@ -39,10 +39,20 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-userSchema.virtual('groups', {
-  ref: 'Membership',
-  foreignField: 'user',
+userSchema.virtual('votings', {
+  ref: 'Ticket',
   localField: '_id',
+  foreignField: 'user',
+});
+
+userSchema.pre('findOne', function () {
+  this.populate({
+    path: 'votings',
+    populate: {
+      path: 'voting',
+      model: 'Voting',
+    },
+  });
 });
 
 // Encrypt new password
