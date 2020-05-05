@@ -85,6 +85,7 @@ exports.createVoting = catchAsync(async (req, res, next) => {
     candidates,
     endTime,
     createdBy: req.user.id,
+    createdAt: Date.now(),
     tx,
   });
 
