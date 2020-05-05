@@ -54,7 +54,7 @@ exports.isConnected = async () => {
 };
 
 exports.createVoting = async (candidates, endTime) => {
-  if (typeof candidates !== 'object') {
+  if (!candidates.length) {
     throw new AppError('Candidates must be an array of strings');
   }
   const votingId = Web3.utils.randomHex(32);

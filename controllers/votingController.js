@@ -150,9 +150,14 @@ exports.startVoting = catchAsync(async (req, res, next) => {
   hasFields(req.body, 'token');
   const { token } = req.body;
 
-  const voting = await findVoting(req.params.id);
-  await VotingContract.startVoting(voting.votingId, token);
-  await voting.updateOne({ isStarted: true });
+  const { votingId } = await findVoting(req.params.id);
+  await VotingContract.startVoting(votingId, token);
+
+  await Voting.findByIdAndUpdate(
+    req.params.id,
+    { isStarted: true },
+    { new: true }
+  );
 
   next();
 });
@@ -172,8 +177,12 @@ exports.vote = catchAsync(async (req, res, next) => {
 });
 
 exports.archiveVoting = catchAsync(async (req, res, next) => {
-  const voting = await findVoting(req.params.id);
-  await voting.updateOne({ isArchived: true }, { new: true });
+  await findVoting(req.params.id);
+  const voting = await Voting.findByIdAndUpdate(
+    req.params.id,
+    { isArchived: true },
+    { new: true }
+  );
 
   res.status(200).json({
     status: 'success',

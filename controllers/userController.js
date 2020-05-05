@@ -16,7 +16,6 @@ const {
 const findUser = async (id) => {
   const user = await User.findById(id);
   if (!user) throw new AppError('No user with this ID', 404);
-  return user;
 };
 
 const multerStorage = multer.memoryStorage();
@@ -82,8 +81,13 @@ exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
 exports.updateMyData = catchAsync(async (req, res, next) => {
   const filteredObject = filterObject(req.body, 'email', 'photo', 'name');
   if (req.file) filteredObject.photo = req.file.filename;
-  const user = await findUser(req.user.id);
-  await user.updateOne(filteredObject, { new: true, runValidators: true });
+
+  await findUser(req.user.id);
+
+  const user = await User.findByIdAndUpdate(req.user.id, filteredObject, {
+    new: true,
+    runValidators: true,
+  });
 
   res.status(200).json({
     status: 'success',

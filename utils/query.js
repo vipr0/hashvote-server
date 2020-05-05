@@ -61,8 +61,12 @@ exports.createDocument = (Model, fields) =>
 exports.updateDocument = (Model, fields) =>
   catchAsync(async (req, res, next) => {
     const filteredBody = filterObject(req.body, ...fields);
-    const result = await findById(Model, req.params.id);
-    await result.updateOne(filteredBody, { new: true, runValidators: true });
+    await findById(Model, req.params.id);
+
+    const result = await Model.findByIdAndUpdate(req.params.id, filteredBody, {
+      new: true,
+      runValidators: true,
+    });
 
     res.status(200).json({
       status: 'success',
