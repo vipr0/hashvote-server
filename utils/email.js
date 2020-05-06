@@ -8,6 +8,8 @@ const {
   EMAIL_USERNAME,
   EMAIL_PASSWORD,
   EMAIL_APP_URL,
+  EMAIL_SENDER_NAME,
+  EMAIL_SENDER_EMAIL,
 } = require('../config');
 
 const sendMail = async (to, templateName, variables, subject) => {
@@ -19,6 +21,9 @@ const sendMail = async (to, templateName, variables, subject) => {
       user: EMAIL_USERNAME,
       pass: EMAIL_PASSWORD,
     },
+    tls: {
+      rejectUnauthorized: false,
+    },
   });
 
   // 1) Render HTML based on a pug template
@@ -29,7 +34,7 @@ const sendMail = async (to, templateName, variables, subject) => {
 
   // 2) Define email options
   const mailOptions = {
-    from: 'Vitaliy Protsyk <administrator@example.com>',
+    from: `${EMAIL_SENDER_NAME} <${EMAIL_SENDER_EMAIL}>`,
     to,
     subject: subject,
     html,
