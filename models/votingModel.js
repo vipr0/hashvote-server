@@ -86,7 +86,7 @@ votingSchema.pre('findOne', function () {
       path: 'user',
       model: 'User',
     },
-  });
+  }).populate('createdBy');
 });
 
 const Voting = mongoose.model('Voting', votingSchema);
