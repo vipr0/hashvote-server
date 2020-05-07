@@ -4,19 +4,13 @@ pragma solidity >=0.4.21 <0.7.0;
 /// @title A voting smart contract
 /// @author Vitaliy Protsyk
 contract VotingPlatform {
-    event TokensAdded(bytes32 votingId, uint256 numOfTokens, address sender);
-    event VotingStarted(bytes32 votingId, uint256 time, address sender);
+    event TokensAdded(bytes32 votingId, uint256 numOfTokens);
+    event VotingStarted(bytes32 votingId, uint256 time);
+    event Voted(bytes32 votingId, bytes32 candidate, bytes32 token);
     event VotingCreated(
         bytes32 votingId,
         bytes32[] candidates,
-        uint256 endTime,
-        address sender
-    );
-    event Voted(
-        bytes32 votingId,
-        bytes32 candidate,
-        bytes32 token,
-        address sender
+        uint256 endTime
     );
 
     // Respresents a single candidate
@@ -48,6 +42,13 @@ contract VotingPlatform {
     // Mapping that stores all votings instances
     mapping(bytes32 => Voting) votings;
 
+    // Address of contract creator
+    address private creator;
+
+    constructor() public {
+        creator = msg.sender;
+    }
+
     /// @notice Creates a new voting
     /// @param votingId Id of voting
     /// @param adminToken Admin token
@@ -59,6 +60,7 @@ contract VotingPlatform {
         bytes32[] memory candidates,
         uint256 endTime
     ) public {
+        require(isCreator(), 'Not a creator`s address');
         require(
             !votingExists(votingId),
             'Voting with this id is already created'
@@ -72,7 +74,7 @@ contract VotingPlatform {
             votings[votingId].candidates[candidates[i]] = Candidate(true, 0);
         }
 
-        emit VotingCreated(votingId, candidates, endTime, msg.sender);
+        emit VotingCreated(votingId, candidates, endTime);
     }
 
     /// @notice Adds new `tokens` to voting
@@ -84,6 +86,7 @@ contract VotingPlatform {
         bytes32 adminToken,
         bytes32[] memory tokens
     ) public {
+        require(isCreator(), 'Not a creator`s address');
         require(votingExists(votingId), 'Voting with this ID not exists');
         require(validAdminToken(votingId, adminToken), 'Invalid admin token');
 
@@ -93,20 +96,21 @@ contract VotingPlatform {
 
         votings[votingId].votersTotal += tokens.length;
 
-        emit TokensAdded(votingId, tokens.length, msg.sender);
+        emit TokensAdded(votingId, tokens.length);
     }
 
     /// @notice Starts voting
     /// @param votingId Id of voting
     /// @param adminToken Admin token
     function startVoting(bytes32 votingId, bytes32 adminToken) public {
+        require(isCreator(), 'Not a creator`s address');
         require(votingExists(votingId), 'Voting with this ID not exists');
         require(validAdminToken(votingId, adminToken), 'Invalid admin token');
         require(!votingStarted(votingId), 'Voting is already started');
 
         votings[votingId].started = true;
 
-        emit VotingStarted(votingId, now, msg.sender);
+        emit VotingStarted(votingId, now);
     }
 
     /// @notice Gives a vote to `candidate`
@@ -118,6 +122,7 @@ contract VotingPlatform {
         // information about it
         bytes32 encryptedToken = encryptToken(token);
 
+        require(isCreator(), 'Not a creator`s address');
         require(votingExists(votingId), 'Voting with this ID not exists');
         require(votingStarted(votingId), 'Voting is not yet started');
         require(!votingFinished(votingId), 'This voting is finished');
@@ -135,7 +140,7 @@ contract VotingPlatform {
         votings[votingId].tokens[encryptedToken].isUsed = true;
         votings[votingId].alreadyVoted += 1;
 
-        emit Voted(votingId, candidate, token, msg.sender);
+        emit Voted(votingId, candidate, token);
     }
 
     /// @notice Check if we have such token
@@ -173,6 +178,12 @@ contract VotingPlatform {
     function endTime(bytes32 votingId) public view returns (uint256) {
         require(votingExists(votingId), 'Voting with this ID not exists');
         return votings[votingId].endTime;
+    }
+
+    /// @notice Check if we have such voting
+    /// @return true if we have such token, false - if not
+    function isCreator() public view returns (bool) {
+        return msg.sender == creator;
     }
 
     /// @notice Check if we have such voting
