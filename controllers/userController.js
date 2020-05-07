@@ -54,6 +54,16 @@ exports.createUser = catchAsync(async (req, res, next) => {
   next();
 });
 
+exports.deleteManyUsers = catchAsync(async (req, res, next) => {
+  const { users } = req.body;
+
+  if (!users || !users.length)
+    return next(new AppError('You must specify array of id`s of users'));
+
+  await User.deleteMany({ _id: { $in: users } });
+  res.status(204).json({ status: 'success', message: 'Succesfully deleted' });
+});
+
 exports.getMyData = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',

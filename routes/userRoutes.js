@@ -33,7 +33,8 @@ router.get('/search', userController.search);
 router
   .route('/')
   .get(userController.getAllUsers)
-  .post(userController.createUser, emailController.sendFinishRegistration);
+  .post(userController.createUser, emailController.sendFinishRegistration)
+  .delete(userController.deleteManyUsers);
 router
   .route('/:id')
   .get(userController.getUser)
