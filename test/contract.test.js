@@ -27,13 +27,6 @@ contract('VotingPlatform', async (accounts) => {
     assert.property(result, 'receipt');
   });
 
-  it('should return correct validAdminToken() value', async () => {
-    const contract = await VotingPlatform.deployed();
-    const result = await contract.validAdminToken(votingId, adminToken);
-
-    assert.isTrue(result);
-  });
-
   it('should add 6 voting tokens', async () => {
     const contract = await VotingPlatform.deployed();
     const result = await contract.addTokens(
@@ -49,26 +42,12 @@ contract('VotingPlatform', async (accounts) => {
     assert.property(result, 'receipt');
   });
 
-  it('should return false in votingStarted()', async () => {
-    const contract = await VotingPlatform.deployed();
-    const result = await contract.votingStarted(votingId);
-
-    assert.isFalse(result);
-  });
-
   it('should start voting', async () => {
     const contract = await VotingPlatform.deployed();
     const result = await contract.startVoting(votingId, adminToken);
 
     assert.property(result, 'tx');
     assert.property(result, 'receipt');
-  });
-
-  it('should return true in votingStarted()', async () => {
-    const contract = await VotingPlatform.deployed();
-    const result = await contract.votingStarted(votingId);
-
-    assert.isTrue(result);
   });
 
   it('should vote 4 times for candidates', async () => {
@@ -103,6 +82,19 @@ contract('VotingPlatform', async (accounts) => {
     assert.property(vote4, 'tx');
   });
 
+  it('should throw error when entering used token', async () => {
+    try {
+      const contract = await VotingPlatform.deployed();
+      await contract.vote(
+        votingId,
+        Web3.utils.utf8ToHex(candidates[1]),
+        tokens[2]
+      );
+    } catch (error) {
+      assert.match(error.message, /This token was used previously/);
+    }
+  });
+
   it('should return correct alredyVoted() value', async () => {
     const contract = await VotingPlatform.deployed();
     const result = await contract.alreadyVoted(votingId);
@@ -124,13 +116,6 @@ contract('VotingPlatform', async (accounts) => {
     assert.equal(result, endTime);
   });
 
-  it('should return correct votingExists() value', async () => {
-    const contract = await VotingPlatform.deployed();
-    const result = await contract.votingExists(votingId);
-
-    assert.isTrue(result);
-  });
-
   it('should return correct totalVotesFor() value', async () => {
     const contract = await VotingPlatform.deployed();
     const result = await contract.totalVotesFor(
@@ -139,62 +124,6 @@ contract('VotingPlatform', async (accounts) => {
     );
 
     assert.equal(result, 2);
-  });
-
-  it('should return correct validCandidate() value', async () => {
-    const contract = await VotingPlatform.deployed();
-    const result = await contract.validCandidate(
-      votingId,
-      Web3.utils.utf8ToHex('Candidate #1')
-    );
-
-    assert.isTrue(result);
-  });
-
-  it('should return correct validToken() value', async () => {
-    const contract = await VotingPlatform.deployed();
-    tokens.map(async (token) => {
-      const result = await contract.validToken(
-        votingId,
-        Web3.utils.soliditySha3(token)
-      );
-      assert.isTrue(result);
-    });
-
-    const resultWrong = await contract.validToken(
-      votingId,
-      Web3.utils.soliditySha3(web3.utils.randomHex(32))
-    );
-    assert.isFalse(resultWrong);
-  });
-
-  it('should return correct usedToken() value', async () => {
-    const contract = await VotingPlatform.deployed();
-    const resultCorrect = await contract.usedToken(
-      votingId,
-      Web3.utils.soliditySha3(tokens[0])
-    );
-    assert.isTrue(resultCorrect);
-
-    const resultWrong = await contract.usedToken(
-      votingId,
-      Web3.utils.soliditySha3(tokens[5])
-    );
-    assert.isFalse(resultWrong);
-  });
-
-  it('should return correct votingFinished() value', async () => {
-    const contract = await VotingPlatform.deployed();
-    const result = await contract.votingFinished(votingId);
-
-    assert.isFalse(result);
-  });
-
-  it('should return correct inFuture() value', async () => {
-    const contract = await VotingPlatform.deployed();
-    const result = await contract.inFuture(Date.now() - 60 * 1000);
-
-    assert.isFalse(result);
   });
 
   it('should return correct currentTime() value', async () => {
