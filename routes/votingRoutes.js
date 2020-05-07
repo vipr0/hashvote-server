@@ -31,7 +31,7 @@ router
 router.get(
   '/:id/contractinfo',
   votingController.checkConnection,
-  votingController.getVotingFromContract
+  votingController.getVotingResult
 );
 router.post(
   '/:id/start',

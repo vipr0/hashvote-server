@@ -55,11 +55,10 @@ exports.getVoting = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getVotingFromContract = catchAsync(async (req, res, next) => {
+exports.getVotingResult = catchAsync(async (req, res, next) => {
   const voting = await findVoting(req.params.id);
 
-  const contract = await VotingContract.getContractInfo(voting.votingId);
-  const voteResult = await VotingContract.totalVotesGiven(
+  const result = await VotingContract.getVotingResult(
     voting.votingId,
     voting.candidates
   );
@@ -67,7 +66,7 @@ exports.getVotingFromContract = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     message: 'Successfull query',
-    result: { ...contract, voteResult },
+    result,
   });
 });
 

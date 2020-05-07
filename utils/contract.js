@@ -104,24 +104,16 @@ exports.startVoting = async (votingId, adminToken) => {
   return result;
 };
 
-exports.getContractInfo = async (votingId) => {
+exports.getVotingResult = async (votingId, candidates) => {
   const VotingContract = await getContractInstance();
+
   const alreadyVoted = (await VotingContract.alreadyVoted(votingId)).toNumber();
   const votersTotal = (await VotingContract.votersTotal(votingId)).toNumber();
-  const endTime = (await VotingContract.endTime(votingId)).toNumber();
-  const votingExists = await VotingContract.votingExists(votingId);
-  const votingStarted = await VotingContract.votingStarted(votingId);
 
-  return { alreadyVoted, votersTotal, endTime, votingExists, votingStarted };
-};
-
-exports.totalVotesGiven = async (votingId, candidates) => {
-  const result = [];
-  const VotingContract = await getContractInstance();
-
+  const voteResult = [];
   // eslint-disable-next-line no-restricted-syntax
   for await (const candidate of candidates) {
-    result.push({
+    voteResult.push({
       name: candidate,
       votesNum: (
         await VotingContract.totalVotesFor(
@@ -132,17 +124,5 @@ exports.totalVotesGiven = async (votingId, candidates) => {
     });
   }
 
-  return result;
-};
-
-exports.votingStarted = async (votingId) => {
-  const VotingContract = await getContractInstance();
-  const result = await VotingContract.votingStarted(votingId);
-
-  return result;
-};
-
-exports.validAdminToken = async (votingId, adminToken) => {
-  const VotingContract = await getContractInstance();
-  return await VotingContract.validAdminToken(votingId, adminToken);
+  return { alreadyVoted, votersTotal, voteResult };
 };
