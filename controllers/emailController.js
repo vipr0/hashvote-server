@@ -49,12 +49,15 @@ exports.sendResetPassword = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.sendFinishRegistration = catchAsync(async (req, res, next) => {
-  await Email.sendFinishRegistration(req.newUser.email, req.token);
-
+exports.sendActivationToken = catchAsync(async (req, res, next) => {
+  // eslint-disable-next-line no-restricted-syntax
+  for await (const user of req.newUsers) {
+    await Email.sendFinishRegistration(user.email, user.token);
+    user.token = undefined;
+  }
   res.status(201).json({
     status: 'success',
-    message: 'User created',
-    result: req.newUser,
+    message: 'Successfully created',
+    result: { newUsers: req.newUsers, ignoredUsers: req.ignoredUsers },
   });
 });

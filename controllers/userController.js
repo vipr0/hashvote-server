@@ -1,10 +1,12 @@
 const multer = require('multer');
 const sharp = require('sharp');
+const neatCsv = require('neat-csv');
 
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 const { filterObject, hasFields } = require('../utils/object');
+const { csvFilter, uploadFile } = require('../utils/upload');
 const {
   search,
   getAllDocuments,
@@ -40,20 +42,6 @@ exports.updateUser = updateDocument(User, ['email', 'name', 'role', 'photo']);
 
 exports.deleteUser = deleteDocument(User);
 
-exports.createUser = catchAsync(async (req, res, next) => {
-  hasFields(req.body, 'name', 'email');
-  const filteredBody = filterObject(req.body, 'name', 'email');
-
-  const user = await User.create(filteredBody);
-  const token = await user.createToken('registrationToken');
-  await user.save({ validateBeforeSave: false });
-
-  req.newUser = user;
-  req.token = token;
-
-  next();
-});
-
 exports.deleteManyUsers = catchAsync(async (req, res, next) => {
   const { users } = req.body;
 
@@ -62,6 +50,72 @@ exports.deleteManyUsers = catchAsync(async (req, res, next) => {
 
   await User.deleteMany({ _id: { $in: users } });
   res.status(204).json({ status: 'success', message: 'Succesfully deleted' });
+});
+
+exports.createUser = catchAsync(async (req, res, next) => {
+  hasFields(req.body, 'name', 'email');
+  const filteredBody = filterObject(req.body, 'name', 'email');
+
+  const user = await User.create(filteredBody);
+  const token = await user.createToken('registrationToken');
+  await user.save({ validateBeforeSave: false });
+
+  req.newUsers = [{ ...user._doc, token }];
+
+  next();
+});
+
+exports.uploadUsersFile = uploadFile(csvFilter).single('file');
+
+exports.createManyUsers = catchAsync(async (req, res, next) => {
+  if (!req.file) return next(new AppError('No file was uploaded'));
+
+  const csv = await neatCsv(req.file.buffer, {
+    headers: ['name', 'email'],
+    separator: ';',
+    mapValues: ({ value }) => value.trim(),
+  });
+
+  if (!csv.length)
+    return next(new AppError('No users found, check your file', 400));
+
+  if (!csv[0].name || !csv[0].email)
+    return next(
+      new AppError(
+        'Invalid file structure. File must contain only name and email, separated by ;',
+        400
+      )
+    );
+
+  const createdUsers = [];
+  const ignoredUsers = [];
+
+  // eslint-disable-next-line no-restricted-syntax
+  for await (const user of csv) {
+    try {
+      if (!(await User.findOne({ email: user.email }))) {
+        const newUser = await User.create(user);
+        const token = await newUser.createToken('registrationToken');
+        await newUser.save({ validateBeforeSave: false });
+        createdUsers.push({ ...newUser._doc, token });
+      }
+    } catch (error) {
+      ignoredUsers.push(user);
+    }
+  }
+
+  if (!createdUsers.length)
+    return next(
+      new AppError(
+        'No new users have been created. It is possible that all users with these emails have already registered',
+        400
+      )
+    );
+
+  req.newUsers = createdUsers;
+  req.ignoredUsers = ignoredUsers;
+
+  next();
 });
 
 exports.getMyData = catchAsync(async (req, res, next) => {

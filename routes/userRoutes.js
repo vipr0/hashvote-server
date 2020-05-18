@@ -33,12 +33,19 @@ router.get('/search', userController.search);
 router
   .route('/')
   .get(userController.getAllUsers)
-  .post(userController.createUser, emailController.sendFinishRegistration)
+  .post(userController.createUser, emailController.sendActivationToken)
   .delete(userController.deleteManyUsers);
 router
   .route('/:id')
   .get(userController.getUser)
   .patch(userController.updateUser)
   .delete(userController.deleteUser, ticketController.removeTicketsBy('user'));
+
+router.post(
+  '/upload',
+  userController.uploadUsersFile,
+  userController.createManyUsers,
+  emailController.sendActivationToken
+);
 
 module.exports = router;
