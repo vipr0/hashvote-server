@@ -11,6 +11,7 @@ const xss = require('xss-clean');
 const AppError = require('./utils/AppError');
 const userRouter = require('./routes/userRoutes');
 const votingRouter = require('./routes/votingRoutes');
+const blockchainRouter = require('./routes/blockchainRoutes');
 const errorController = require('./controllers/errorController');
 
 const app = express();
@@ -49,6 +50,7 @@ app.use(compression());
 // Routes
 app.use('/api/v1/votings', votingRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/blockchain', blockchainRouter);
 
 app.use('*', (req, res, next) => {
   next(new AppError('Такої сторінки не знайдено', 404));
