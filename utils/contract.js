@@ -39,6 +39,11 @@ const getContractInstance = async () => {
   return instance;
 };
 
+exports.getContractAddress = async () => {
+  const VotingContract = await getContractInstance();
+  return VotingContract.address;
+};
+
 exports.createVoting = async (candidates, endTime) => {
   if (!candidates.length) {
     throw new AppError('Candidates must be an array of strings');

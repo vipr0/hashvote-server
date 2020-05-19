@@ -4,6 +4,7 @@ const {
   getWallets,
   getAccountBalance,
 } = require('../utils/web3Provider');
+const { getContractAddress } = require('../utils/contract');
 const AppError = require('../utils/AppError');
 
 exports.checkConnection = catchAsync(async (req, res, next) => {
@@ -19,5 +20,14 @@ exports.getWalletInfo = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'succes',
     result: { account, balance },
+  });
+});
+
+exports.getContractInfo = catchAsync(async (req, res, next) => {
+  const address = await getContractAddress();
+
+  res.status(200).json({
+    status: 'succes',
+    result: { address },
   });
 });
