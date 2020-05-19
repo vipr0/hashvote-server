@@ -20,3 +20,9 @@ exports.isConnected = async () => {
     return false;
   }
 };
+
+exports.getAccountBalance = async (walletAddress) => {
+  const web3 = new Web3(this.getCurrentProvider());
+  const balance = await web3.eth.getBalance(walletAddress);
+  return web3.utils.fromWei(balance);
+};
