@@ -1,12 +1,11 @@
 const mongoose = require('mongoose');
 const app = require('./app');
-const { PORT, DB, DB_PASSWORD } = require('./config');
+const { PORT, DB } = require('./config');
 
 const port = PORT || 3000;
-const dbUrl = DB.replace('<password>', DB_PASSWORD);
 
 mongoose
-  .connect(dbUrl, {
+  .connect(DB, {
     useNewUrlParser: true,
     useCreateIndex: true,
     useFindAndModify: false,
