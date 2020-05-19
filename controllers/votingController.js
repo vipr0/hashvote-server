@@ -39,12 +39,6 @@ exports.updateVoting = updateDocument(Voting, ['title', 'description']);
 
 exports.deleteVoting = deleteDocument(Voting);
 
-exports.checkConnection = catchAsync(async (req, res, next) => {
-  const connected = await VotingContract.isConnected();
-  if (!connected) return next(new AppError('Not connected to blockchain', 500));
-  next();
-});
-
 exports.getVoting = catchAsync(async (req, res, next) => {
   const voting = await findVoting(req.params.id);
 

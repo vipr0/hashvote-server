@@ -3,6 +3,7 @@ const votingController = require('../controllers/votingController');
 const authController = require('../controllers/authController');
 const ticketController = require('../controllers/ticketController');
 const emailController = require('../controllers/emailController');
+const blockchainController = require('../controllers/blockchainController');
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ router
   .route('/')
   .get(votingController.getAllVotings)
   .post(
-    votingController.checkConnection,
+    blockchainController.checkConnection,
     votingController.createVoting,
     emailController.sendAdminToken
   )
@@ -20,8 +21,8 @@ router
 
 router
   .route('/:id')
-  .get(votingController.checkConnection, votingController.getVoting)
-  .post(votingController.checkConnection, votingController.vote)
+  .get(votingController.getVoting)
+  .post(blockchainController.checkConnection, votingController.vote)
   .patch(votingController.updateVoting)
   .delete(
     votingController.deleteVoting,
@@ -30,19 +31,19 @@ router
 
 router.get(
   '/:id/contractinfo',
-  votingController.checkConnection,
+  blockchainController.checkConnection,
   votingController.getVotingResult
 );
 router.post(
   '/:id/start',
-  votingController.checkConnection,
+  blockchainController.checkConnection,
   votingController.startVoting,
   emailController.sendVotingStarted
 );
 router.post('/:id/archive', votingController.archiveVoting);
 router.post(
   '/:id/users',
-  votingController.checkConnection,
+  blockchainController.checkConnection,
   votingController.uploadCSVFile,
   votingController.addUsers,
   ticketController.createTickets,

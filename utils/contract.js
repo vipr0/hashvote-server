@@ -4,10 +4,7 @@ const path = require('path');
 const Web3 = require('web3');
 const contract = require('@truffle/contract');
 const AppError = require('./AppError');
-const { NODE_ENV } = require('../config');
-const { networks } = require('../truffle-config');
-
-const currentProvider = networks[NODE_ENV].provider();
+const { getCurrentProvider, getWallets } = require('./web3Provider');
 
 const generateTokensArray = (length) => {
   const tokens = [];
@@ -18,8 +15,7 @@ const generateTokensArray = (length) => {
 };
 
 const loadContractABI = async () => {
-  const web3 = new Web3(currentProvider);
-  const accounts = await web3.eth.getAccounts();
+  const accounts = await getWallets();
 
   const file = path.resolve(
     __dirname,
@@ -32,7 +28,7 @@ const loadContractABI = async () => {
   const json = await promisify(fs.readFile)(file, 'utf-8');
 
   const contractObject = contract(JSON.parse(json));
-  contractObject.setProvider(currentProvider);
+  contractObject.setProvider(getCurrentProvider());
   contractObject.defaults({ from: accounts[0], gas: 4500000 });
   return contractObject;
 };
@@ -41,16 +37,6 @@ const getContractInstance = async () => {
   const abi = await loadContractABI();
   const instance = await abi.deployed();
   return instance;
-};
-
-exports.isConnected = async () => {
-  try {
-    const web3 = new Web3(currentProvider);
-    const connection = await web3.eth.getNodeInfo();
-    if (connection) return true;
-  } catch (error) {
-    return false;
-  }
 };
 
 exports.createVoting = async (candidates, endTime) => {
