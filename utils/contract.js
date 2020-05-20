@@ -44,6 +44,16 @@ exports.getContractAddress = async () => {
   return VotingContract.address;
 };
 
+exports.getVotingEvents = async (votingId) => {
+  const VotingContract = await getContractInstance();
+  const allEvents = await VotingContract.getPastEvents('allEvents', {
+    fromBlock: 'earliest',
+    toBlock: 'latest',
+  });
+
+  return allEvents.filter((event) => event.returnValues.votingId === votingId);
+};
+
 exports.createVoting = async (candidates, endTime) => {
   if (!candidates.length) {
     throw new AppError('Candidates must be an array of strings');

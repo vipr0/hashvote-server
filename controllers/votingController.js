@@ -64,6 +64,16 @@ exports.getVotingResult = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.getVotingEvents = catchAsync(async (req, res, next) => {
+  const { votingId } = await findVoting(req.params.id);
+  const result = await VotingContract.getVotingEvents(votingId);
+  res.status(200).json({
+    status: 'success',
+    message: 'Successfull query',
+    result,
+  });
+});
+
 exports.createVoting = catchAsync(async (req, res, next) => {
   hasFields(req.body, 'title', 'description', 'candidates', 'endTime');
   const { title, description, candidates, endTime } = req.body;

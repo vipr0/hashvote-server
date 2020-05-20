@@ -34,6 +34,11 @@ router.get(
   blockchainController.checkConnection,
   votingController.getVotingResult
 );
+router.get(
+  '/:id/events',
+  blockchainController.checkConnection,
+  votingController.getVotingEvents
+);
 router.post(
   '/:id/start',
   blockchainController.checkConnection,
