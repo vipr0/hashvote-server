@@ -3,7 +3,10 @@ const { NODE_ENV } = require('../config');
 const { networks } = require('../truffle-config');
 
 exports.getCurrentProvider = () => {
-  return networks[NODE_ENV].provider();
+  if (networks[NODE_ENV].provider) {
+    return networks[NODE_ENV].provider();
+  }
+  return `http://${networks[NODE_ENV].host}:${networks[NODE_ENV].port}`;
 };
 
 exports.getWallets = async () => {

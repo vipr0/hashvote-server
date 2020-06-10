@@ -1,7 +1,8 @@
-const HDWalletProvider = require('@truffle/hdwallet-provider');
+const Web3 = require('web3');
+const net = require('net');
 const ganache = require('ganache-cli');
 
-const { INFURA_KEY, MNEMONIC } = require('./config');
+const { MNEMONIC, NODE_IPC_PATH } = require('./config');
 
 module.exports = {
   networks: {
@@ -15,34 +16,10 @@ module.exports = {
       network_id: 5777,
     },
     production: {
-      provider: () =>
-        new HDWalletProvider(
-          MNEMONIC,
-          `https://kovan.infura.io/v3/${INFURA_KEY}`
-        ),
-      network_id: 42,
+      provider: () => new Web3.providers.IpcProvider(NODE_IPC_PATH, net),
+      network_id: '*',
       gas: 5500000,
       confirmations: 1,
-    },
-  },
-
-  // Set default mocha options here, use special reporters etc.
-  mocha: {
-    // timeout: 100000
-  },
-
-  // Configure your compilers
-  compilers: {
-    solc: {
-      // version: "0.5.1",    // Fetch exact version from solc-bin (default: truffle's version)
-      // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
-      // settings: {          // See the solidity docs for advice about optimization and evmVersion
-      //  optimizer: {
-      //    enabled: false,
-      //    runs: 200
-      //  },
-      //  evmVersion: "byzantium"
-      // }
     },
   },
 };
