@@ -14,6 +14,12 @@ exports.getWallets = async () => {
   return await web3.eth.getAccounts();
 };
 
+exports.getBlockNumberByTx = async (tx) => {
+  const web3 = new Web3(this.getCurrentProvider());
+  const { blockNumber } = await web3.eth.getTransaction(tx);
+  return blockNumber;
+};
+
 exports.isConnected = async () => {
   try {
     const web3 = new Web3(this.getCurrentProvider());

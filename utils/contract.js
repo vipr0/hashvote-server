@@ -44,10 +44,10 @@ exports.getContractAddress = async () => {
   return VotingContract.address;
 };
 
-exports.getVotingEvents = async (votingId) => {
+exports.getVotingEvents = async (votingId, fromBlock = 'earliest') => {
   const VotingContract = await getContractInstance();
   const allEvents = await VotingContract.getPastEvents('allEvents', {
-    fromBlock: 'earliest',
+    fromBlock,
     toBlock: 'latest',
   });
 

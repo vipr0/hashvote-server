@@ -9,6 +9,7 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 const { hasFields } = require('../utils/object');
 const VotingContract = require('../utils/contract');
+const { getBlockNumberByTx } = require('../utils/web3Provider');
 const {
   getAllDocuments,
   updateDocument,
@@ -65,8 +66,9 @@ exports.getVotingResult = catchAsync(async (req, res, next) => {
 });
 
 exports.getVotingEvents = catchAsync(async (req, res, next) => {
-  const { votingId } = await findVoting(req.params.id);
-  const result = await VotingContract.getVotingEvents(votingId);
+  const { votingId, tx } = await findVoting(req.params.id);
+  const startingBlock = await getBlockNumberByTx(tx);
+  const result = await VotingContract.getVotingEvents(votingId, startingBlock);
   res.status(200).json({
     status: 'success',
     message: 'Successfull query',
