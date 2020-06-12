@@ -3,9 +3,7 @@
 * OS: Ubuntu 19.10+ or other **Linux Distribution** (Not  tested on Windows or MacOS) with at least 2Gb RAM
 * Installed: **Node.js, NPM, Git**
 * Database: **MongoDB**
-* **Ethereum wallet** with > 0.2 ETH (For **Kovan** testnet)
-* **Infura** API key
-
+* Running **Ethereum node** (*geth* or *parity*) and wallet with at least 0.2 ETH
 
 
 # Installation
@@ -44,7 +42,7 @@ git clone https://github.com/vipr0/knuba-evoting-server.git
 npm install
 ```
 
-#### 4. Create config.env and pass required variables
+#### 4. Create config.env file and pass required variables
 
 ```bash
 NODE_ENV=# development - to run with local (ganache) blockchain; production - to run with infura provider #
@@ -56,7 +54,7 @@ JWT_SECRET=# private key to encrypt user auth tokens (JWT) #
 JWT_EXPIRES_IN=# time when auth token will expire (example: 2d) #
 JWT_COOKIE_EXPIRES_IN=# same as JWT_EXPIRES_IN but for cookies and accepts only number value (example: 2) #
 
-INFURA_KEY=# api key for infura provider (you can find it in your profile on infura.io) #
+NODE_IPC_PATH=# /path/to/your/node/ipc
 MNEMONIC=# mnemonic of your ethereum wallet #
 
 EMAIL_HOST=# host of your smtp server #
@@ -82,7 +80,7 @@ For local (ganache) blockchain:
 npm run migrate:dev
 ```
 
-For production (infura) blockchain:
+For production blockchain:
 
 ```
 npm run migrate:prod
